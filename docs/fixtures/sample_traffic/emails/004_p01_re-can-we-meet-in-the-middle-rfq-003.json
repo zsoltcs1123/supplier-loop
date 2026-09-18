@@ -1,0 +1,9 @@
+{
+  "id": "sample-004",
+  "from": "marta.novak@novaksteel.example",
+  "to": "candidate@sim.local",
+  "subject": "Re: can we meet in the middle (RFQ-003)",
+  "sim_time_hours": 100.07,
+  "body": "Hi,\n\nDeal at 16383.05 total. I'll note the revised figure on our side; everything else stands.\n\nMarta Novak",
+  "attachments": []
+}

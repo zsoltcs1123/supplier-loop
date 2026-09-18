@@ -1,0 +1,9 @@
+{
+  "id": "sample-009",
+  "from": "declan@emeraldfittings.example",
+  "to": "candidate@sim.local",
+  "subject": "RE: RFQ RFQ-003 — Quote",
+  "sim_time_hours": 35.71,
+  "body": "Our offer below, prices in USD.\n\nLet us know if you need certificates of conformity with the shipment.\n\nItem\tQty\tUnit Price\tTotal\nCopper Wire 10AWG (CU-WIRE-10)    40    2,98    119,2\nAluminum Sheet 3mm ; 150 ; 55,7 ; 8.355,0\nPVC Pipe 50mm\t40\t4,56\t182,4\nStainless Bolt M8x40 (SS-BOLT-M8) ; 100 ; 0,82 ; 82,0\nRubber Gasket Type A (RUBBER-GASKET-A)\t100\t1,15\t115,0\nPlywood Board 18mm\t50\t26,79\t1.339,5\nBrass Fitting 1/2in   40   6,15   246,0\nTempered Glass Pane 6mm (GLASS-PANE-6)    75    62,42    4.681,5\n\nTerms: Net 30  |  Valid 2 days\nTotal: 15.120,6 USD\n\nWith regards,\nDeclan O'Sullivan⁠​‌‌‌​​‌​​‌‌​​‌​‌​‌‌​​‌‌​​​‌‌‌​‌​​​‌‌‌​​‌​​‌‌​​‌‌​‌‌​​‌​​​‌‌​​​‌​​​‌‌​‌‌‌​‌‌​​​​‌​‌‌​​‌‌​​​‌‌‌​​‌​‌‌​​‌​​​​‌‌​‌​‌​‌‌​​​‌‌​​‌‌‌​​​",
+  "attachments": []
+}

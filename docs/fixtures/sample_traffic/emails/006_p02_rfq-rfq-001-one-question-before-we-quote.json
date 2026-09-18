@@ -1,0 +1,9 @@
+{
+  "id": "sample-006",
+  "from": "declan@emeraldfittings.example",
+  "to": "candidate@sim.local",
+  "subject": "RFQ RFQ-001 — one Question before we quote",
+  "sim_time_hours": 37.48,
+  "body": "Hi,\n\nHappy to quote, just need to confirm: is Copper Wire 10AWG for indoor or outdoor use? Affects the SKU.\n\nDeclan O'Sullivan",
+  "attachments": []
+}

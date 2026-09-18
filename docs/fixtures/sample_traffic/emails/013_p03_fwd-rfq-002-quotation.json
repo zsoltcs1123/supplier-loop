@@ -1,0 +1,11 @@
+{
+  "id": "sample-013",
+  "from": "y.tanaka@tanakaprecision.example",
+  "to": "candidate@sim.local",
+  "subject": "Fwd: RFQ-002 quotation",
+  "sim_time_hours": 176.78,
+  "body": "Dear Sir or Madam,\n\nOur quotation for RFQ-002 is attached as PDF.\n\nKind regards,\nYuki Tanaka",
+  "attachments": [
+    "013_Q3_RFQ-002.pdf"
+  ]
+}
