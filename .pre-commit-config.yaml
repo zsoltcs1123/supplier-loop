@@ -51,8 +51,7 @@ repos:
       - id: module-size
         name: module-size (500 lines)
         entry: >-
-          bash -c 'v=0; for f in $(find src -name "*.py" -not -path "*/__pycache__/*");
-          do n=$(wc -l < "$f"); if [ "$n" -gt 500 ]; then echo "$f: $n lines (>500)"; v=1; fi; done; exit $v'
+          bash -c 'v=0; for f in $(find src -name "*.py" -not -path "*/__pycache__/*"); do n=$(wc -l < "$f"); if [ "$n" -gt 500 ]; then echo "$f: $n lines (>500)"; v=1; fi; done; exit $v'
         language: system
         types: [python]
         pass_filenames: false

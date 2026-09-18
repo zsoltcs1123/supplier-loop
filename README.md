@@ -11,7 +11,7 @@ uv sync --dev && uv pip install -e .
 prek install --hook-type pre-commit --hook-type commit-msg
 ```
 
-Copy `.env.example` to `.env` and fill in credentials when you have them. See `SEED.md` for required env var names.
+Copy `.env.example` to `.env` and fill in credentials when you have them. See [docs/SEED.md](docs/SEED.md) for required env var names.
 
 ## Development
 
@@ -34,15 +34,17 @@ supplier-loop/
 │   ├── unit/
 │   └── integration/
 ├── docs/
+│   ├── SEED.md            # Design seed and repo bootstrap notes
+│   ├── ARCHITECTURE.md    # Components, trust boundary, runtime shape
 │   ├── spec/              # Challenge spec files
 │   └── fixtures/          # Sample traffic and example artifacts
-├── packages/              # Workspace members
-└── SEED.md                # Design seed and repo bootstrap notes
+└── packages/              # Workspace members
 ```
 
 ## Documentation
 
-- **[SEED.md](SEED.md)** — design decisions, loop architecture, bootstrap steps
+- **[docs/SEED.md](docs/SEED.md).** Design decisions, loop pass, bootstrap steps.
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).** Components, trust boundary, runtime shape.
 - **[DEVELOPING.md](DEVELOPING.md)** — development tools and workflows
 - **[AGENTS.md](AGENTS.md)** — AI coding agent guidance
 - **`docs/spec/`** — challenge brief, RFQ format, escalation rules, and related spec

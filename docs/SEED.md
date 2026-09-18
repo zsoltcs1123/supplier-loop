@@ -1,26 +1,26 @@
 # Supplier Loop seed
 
 This file is the seed for the implementation repository. It records what you build, how you build it, and which decisions are already made. It is not a task list. Spec files are the source of truth.
-If a design decision here conflicts with a spec file, the spec file wins. Fixtures are not spec.
+If a design decision here conflicts with a spec file, the spec file wins. Fixtures are not spec. Architecture is in [docs/ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Spec and fixtures
 
 Spec files in the challenge package:
 
-- [Challenge brief](docs/spec/CHALLENGE-BRIEF-SUPPLIER-LOOP.md)
-- [Access, terms, and timing](docs/spec/message.md) from Gergely, dated 2026-09-18
-- [RFQ schema, MCP tool contracts, and `submit_results`](docs/spec/RFQ_FORMAT.md)
-- [Must-escalate and must-not-escalate rules](docs/spec/ESCALATION_RULES.md)
-- [Known rough edges](docs/spec/FAQ.md)
-- [Loop contract skeleton](docs/spec/LOOP_CONTRACT_TEMPLATE.md)
-- [Supplier personas and reply styles](docs/spec/supplier_profiles.md)
-- [Price history format](docs/spec/price_history.md). Live data comes from the tool.
+- [Challenge brief](spec/CHALLENGE-BRIEF-SUPPLIER-LOOP.md)
+- [Access, terms, and timing](spec/message.md) from Gergely, dated 2026-09-18
+- [RFQ schema, MCP tool contracts, and `submit_results`](spec/RFQ_FORMAT.md)
+- [Must-escalate and must-not-escalate rules](spec/ESCALATION_RULES.md)
+- [Known rough edges](spec/FAQ.md)
+- [Loop contract skeleton](spec/LOOP_CONTRACT_TEMPLATE.md)
+- [Supplier personas and reply styles](spec/supplier_profiles.md)
+- [Price history format](spec/price_history.md). Live data comes from the tool.
 
 Fixtures. Not assignment data.
 
-- [Example artifacts](docs/spec/example_artifacts/) is one sample of each quote type: [inline text](docs/spec/example_artifacts/inline-text_email_body.txt), [pasted table](docs/spec/example_artifacts/pasted-table_email_body.txt), [PDF](docs/spec/example_artifacts/pdf_tanaka-offer.pdf), and [photo](docs/spec/example_artifacts/photo_alsayed_screen.png).
-- [Sample emails](docs/fixtures/sample_traffic/emails/) is the parser fixture set: 20 emails, attachments, and [index.csv](docs/fixtures/sample_traffic/emails/index.csv).
-- [SAMPLE-TRAFFIC.html](docs/fixtures/sample_traffic/SAMPLE-TRAFFIC.html) is a readable dump of that same traffic.
+- [Example artifacts](spec/example_artifacts/) is one sample of each quote type: [inline text](spec/example_artifacts/inline-text_email_body.txt), [pasted table](spec/example_artifacts/pasted-table_email_body.txt), [PDF](spec/example_artifacts/pdf_tanaka-offer.pdf), and [photo](spec/example_artifacts/photo_alsayed_screen.png).
+- [Sample emails](fixtures/sample_traffic/emails/) is the parser fixture set: 20 emails, attachments, and [index.csv](fixtures/sample_traffic/emails/index.csv).
+- [SAMPLE-TRAFFIC.html](fixtures/sample_traffic/SAMPLE-TRAFFIC.html) is a readable dump of that same traffic.
 
 ## Assignment
 
@@ -221,7 +221,7 @@ Seen email IDs, attachment IDs, processed quote fingerprints. Lives with the cur
 
 ### submit_results
 
-Payload follows [RFQ_FORMAT.md](docs/spec/RFQ_FORMAT.md). Include an entry for every relevant supplier. If a supplier never quoted, do not invent line items. Declare `reminded`, or the strongest action that actually happened.
+Payload follows [RFQ_FORMAT.md](spec/RFQ_FORMAT.md). Include an entry for every relevant supplier. If a supplier never quoted, do not invent line items. Declare `reminded`, or the strongest action that actually happened.
 
 Line item values are what the supplier sent. Handle mismatches with `action_taken` and escalation, not by editing numbers. Exception: recomputed `total` and `grand_total` when the document arithmetic is wrong.
 
@@ -263,8 +263,8 @@ The spec does not publish these.
 1. Initialize from the `python_uv` template.
 2. Copy spec markdown into `docs/spec/`: brief, `message.md`, and the starter-pack markdown files.
 3. Copy `starter_pack/example_artifacts/` and `sample_traffic/` into `docs/fixtures/`.
-4. Add this `SEED.md`.
-5. Write a short `ARCHITECTURE.md` with the project-architecture skill.
+4. Add this `docs/SEED.md`.
+5. Write a short `docs/ARCHITECTURE.md` with the project-architecture skill.
 6. Run `anneal init` and define the initial changes.
 7. Add `WORKLOG.md` and start logging on day one.
 8. Add `.env.example` with the required env var names.
