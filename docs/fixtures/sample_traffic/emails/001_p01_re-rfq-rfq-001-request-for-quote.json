@@ -1,0 +1,9 @@
+{
+  "id": "sample-001",
+  "from": "marta.novak@novaksteel.example",
+  "to": "candidate@sim.local",
+  "subject": "RE: RFQ RFQ-001 - request for quote",
+  "sim_time_hours": 26.6,
+  "body": "Our offer:\n\nSteel I-Beam 200mm (STL-BEAM-200): qty 50 m x 42.29 USD/m = 2114.50 USD\nCopper Wire 10AWG (CU-WIRE-10): qty 40 m x 3.08 USD/m = 123.20 USD\nAluminum Sheet 3mm (AL-SHEET-3): qty 100 sheet x 57.71 USD/sheet = 5771.00 USD\nPVC Pipe 50mm (PVC-PIPE-50): qty 50 m x 4.73 USD/m = 236.50 USD\nRubber Gasket Type A (RUBBER-GASKET-A): qty 75 pcs x 1.19 USD/pcs = 89.25 USD\nPlywood Board 18mm (PLY-BOARD-18): qty 50 sheet x 27.76 USD/sheet = 1388.00 USD\nBrass Fitting 1/2in (BRASS-FIT-12): qty 40 pcs x 6.37 USD/pcs = 254.80 USD (cut to length)\n\nPayment Net 30 / validity 30 days / total 9977.25 USD\n\nRgds, Marta Novak\nNovak Steelworks | Industrial Park 14, Hall 3\nTel +48 22 555 0148 | novaksteel.example⁠​‌‌‌​​‌​​‌‌​​‌​‌​‌‌​​‌‌​​​‌‌‌​‌​​​‌‌‌​​‌​​‌‌​​‌‌​‌‌​​‌​​​‌‌​​​‌​​​‌‌​‌‌‌​‌‌​​​​‌​‌‌​​‌‌​​​‌‌‌​​‌​‌‌​​‌​​​​‌‌​‌​‌​‌‌​​​‌‌​​‌‌‌​​​",
+  "attachments": []
+}

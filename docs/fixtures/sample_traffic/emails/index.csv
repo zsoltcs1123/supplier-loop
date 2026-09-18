@@ -1,0 +1,21 @@
+id,from,subject,sim_time_hours,reply_style,attachment_count
+sample-001,marta.novak@novaksteel.example,RE: RFQ RFQ-001 - request for quote,26.6,inline-text,0
+sample-002,marta.novak@novaksteel.example,Your RFQ RFQ-002: offer,80.94,inline-text,0
+sample-003,marta.novak@novaksteel.example,RE: RFQ RFQ-003 — Quote,48.07,inline-text,0
+sample-004,marta.novak@novaksteel.example,Re: can we meet in the middle (RFQ-003),100.07,inline-text,0
+sample-005,marta.novak@novaksteel.example,Question before quoting RFQ-004,35.24,inline-text,0
+sample-006,declan@emeraldfittings.example,RFQ RFQ-001 — one Question before we quote,37.48,pasted-table,0
+sample-007,declan@emeraldfittings.example,Fwd: RFQ-001 quotation,77.48,pasted-table,0
+sample-008,declan@emeraldfittings.example,RE: RFQ-002 — our pricing,53.3,pasted-table,1
+sample-009,declan@emeraldfittings.example,RE: RFQ RFQ-003 — Quote,35.71,pasted-table,0
+sample-010,declan@emeraldfittings.example,Your RFQ RFQ-004: offer,81.41,pasted-table,0
+sample-011,y.tanaka@tanakaprecision.example,Quote for RFQ RFQ-001,103.97,pdf,1
+sample-012,y.tanaka@tanakaprecision.example,Quote for RFQ RFQ-001,122.09,pdf,1
+sample-013,y.tanaka@tanakaprecision.example,Fwd: RFQ-002 quotation,176.78,pdf,1
+sample-014,y.tanaka@tanakaprecision.example,RE: RFQ RFQ-003 - request for quote,128.43,pdf,1
+sample-015,y.tanaka@tanakaprecision.example,RE: RFQ RFQ-004 - request for quote,125.47,pdf,1
+sample-016,fatima.alsayed@alsayedtrading.example,Your RFQ RFQ-001: offer,120.44,photo,1
+sample-017,fatima.alsayed@alsayedtrading.example,RE: RFQ-002 — our pricing,145.46,photo,1
+sample-018,fatima.alsayed@alsayedtrading.example,Re: can we meet in the middle (RFQ-002),293.46,photo,0
+sample-019,fatima.alsayed@alsayedtrading.example,RE: RFQ RFQ-003 - request for quote,61.22,photo,1
+sample-020,fatima.alsayed@alsayedtrading.example,RE: RFQ RFQ-003 - request for quote,80.93,photo,1

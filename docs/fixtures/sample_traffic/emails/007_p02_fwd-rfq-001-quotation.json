@@ -1,0 +1,9 @@
+{
+  "id": "sample-007",
+  "from": "declan@emeraldfittings.example",
+  "to": "candidate@sim.local",
+  "subject": "Fwd: RFQ-001 quotation",
+  "sim_time_hours": 77.48,
+  "body": "Offer as follows, all amounts USD.\n\nNote: minimum order applies on cut-to-length items.\n\nQuantity\tUoM\tDescription\tRate\tAmount\n--------\t---\t-----------\t----\t------\n40 | m | Copper Wire 10AWG (CU-WIRE-10) | 3,0 USD | 120,0 USD\n100 ; sheet ; Aluminum Sheet 3mm (AL-SHEET-3) ; 56,04 USD ; 5604,0 USD\n50\tm\tPVC Pipe 50mm\t4,59 USD\t229,5 USD\n40 | pcs | Stainless Bolt M8x40 | 0,82 USD | 32,8 USD\n75 ; pcs ; Rubber Gasket Type A (RUBBER-GASKET-A) ; 1,16 USD ; 87,0 USD\n50   sheet   Plywood Board 18mm (PLY-BOARD-18)   26,96 USD   1348,0 USD\n40   pcs   Brass Fitting 1/2in   6,18 USD   247,2 USD\n20\tsheet\tTempered Glass Pane 6mm (GLASS-PANE-6)\t62,8 USD\t1256,0 USD\n\nTerms: Net 30\nValid for 21 days, then subject to review\nGrand total: 8924,5 USD\n\nA copy of our general terms is available on request.\n\nBest regards from the whole team,\nDeclan O'Sullivan\nEmerald Fittings Co. — Dublin — +353 1 555 2290⁠​‌‌‌​​‌​​‌‌​​‌​‌​‌‌​​‌‌​​​‌‌‌​‌​​​‌‌‌​​‌​​‌‌​​‌‌​‌‌​​‌​​​‌‌​​​‌​​​‌‌​‌‌‌​‌‌​​​​‌​‌‌​​‌‌​​​‌‌‌​​‌​‌‌​​‌​​​​‌‌​‌​‌​‌‌​​​‌‌​​‌‌‌​​​",
+  "attachments": []
+}

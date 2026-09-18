@@ -1,0 +1,9 @@
+{
+  "id": "sample-002",
+  "from": "marta.novak@novaksteel.example",
+  "to": "candidate@sim.local",
+  "subject": "Your RFQ RFQ-002: offer",
+  "sim_time_hours": 80.94,
+  "body": "Apologies for the silence, I was travelling.\n\nQuote below.\n\n- 100 m Steel I-Beam 200mm (STL-BEAM-200) at USD 41.39 per m, total USD 4,139.00\n- 100 m Copper Wire 10AWG at USD 3.02 per m, total USD 302.00\n- 150 sheet Aluminum Sheet 3mm (AL-SHEET-3) at USD 56.48 per sheet, total USD 8,472.00\n- 75 m PVC Pipe 50mm (PVC-PIPE-50) at USD 4.63 per m, total USD 347.25 (3-4 wk lead)\n- 100 pcs Stainless Bolt M8x40 (SS-BOLT-M8) at USD 0.83 per pcs, total USD 83.00\n- 100 pcs Rubber Gasket Type A at USD 1.17 per pcs, total USD 117.00\n- 100 sheet Plywood Board 18mm (PLY-BOARD-18) at USD 27.17 per sheet, total USD 2,717.00\n- 50 pcs Brass Fitting 1/2in (BRASS-FIT-12) at USD 6.23 per pcs, total USD 311.50\n\nGrand total: USD 16,488.75\nValid 30 days\nTerms: Net 30\n\nMarta Novak\n\n\n> On Wed 11:47, candidate@sim.local wrote:\n> Request for quote — RFQ-002\n> Steel I-Beam 200mm: 100 m\n> Copper Wire 10AWG: 100 m\n> Aluminum Sheet 3mm: 150 sheet\n> PVC Pipe 50mm: 75 m\n> Stainless Bolt M8x40: 100 pcs\n> Rubber Gasket Type A: 100 pcs\n> Plywood Board 18mm: 100 sheet\n> Brass Fitting 1/2in: 50 pcs\n> Please quote with payment terms and validity.⁠​‌‌‌​​‌​​‌‌​​‌​‌​‌‌​​‌‌​​​‌‌‌​‌​​​‌‌‌​​‌​​‌‌​​‌‌​‌‌​​‌​​​‌‌​​​‌​​​‌‌​‌‌‌​‌‌​​​​‌​‌‌​​‌‌​​​‌‌‌​​‌​‌‌​​‌​​​​‌‌​‌​‌​‌‌​​​‌‌​​‌‌‌​​​",
+  "attachments": []
+}

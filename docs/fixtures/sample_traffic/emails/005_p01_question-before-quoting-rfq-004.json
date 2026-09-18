@@ -1,0 +1,9 @@
+{
+  "id": "sample-005",
+  "from": "marta.novak@novaksteel.example",
+  "to": "candidate@sim.local",
+  "subject": "Question before quoting RFQ-004",
+  "sim_time_hours": 35.24,
+  "body": "Hi,\n\nIs the Steel I-Beam 200mm going to be exposed to salt water / marine conditions? We stock two grades and the price differs.\n\nMarta Novak",
+  "attachments": []
+}

@@ -1,0 +1,9 @@
+{
+  "id": "sample-003",
+  "from": "marta.novak@novaksteel.example",
+  "to": "candidate@sim.local",
+  "subject": "RE: RFQ RFQ-003 — Quote",
+  "sim_time_hours": 48.07,
+  "body": "Quoted as follows -\n\n1) Steel I-Beam 200mm (STL-BEAM-200) — 150 x 41.20 = 6180.00 (m) (3-4 wk lead)\n2) Copper Wire 10AWG — 40 x 3.01 = 120.40 (m)\n3) Aluminum Sheet 3mm (AL-SHEET-3) — 150 x 56.23 = 8434.50 (sheet) (3-4 wk lead)\n4) PVC Pipe 50mm (PVC-PIPE-50) — 40 x 4.60 = 184.00 (m) (3-4 wk lead)\n5) Stainless Bolt M8x40 — 100 x 0.82 = 82.00 (pcs)\n6) Rubber Gasket Type A (RUBBER-GASKET-A) — 100 x 1.16 = 116.00 (pcs) (cut to length)\n7) Plywood Board 18mm — 50 x 27.05 = 1352.50 (sheet)\n8) Brass Fitting 1/2in (BRASS-FIT-12) — 40 x 6.20 = 248.00 (pcs)\n\nPayment 50% upfront, 50% Net 30 / validity 30 days / total 16717.40 USD\n\nBr, Marta Novak\n\n\n> On Fri 14:55, candidate@sim.local wrote:\n> Request for quote — RFQ-003\n> Steel I-Beam 200mm: 150 m\n> Copper Wire 10AWG: 40 m\n> Aluminum Sheet 3mm: 150 sheet\n> PVC Pipe 50mm: 40 m\n> Stainless Bolt M8x40: 100 pcs\n> Rubber Gasket Type A: 100 pcs\n> Plywood Board 18mm: 50 sheet\n> Brass Fitting 1/2in: 40 pcs\n> Please quote with payment terms and validity.⁠​‌‌‌​​‌​​‌‌​​‌​‌​‌‌​​‌‌​​​‌‌‌​‌​​​‌‌‌​​‌​​‌‌​​‌‌​‌‌​​‌​​​‌‌​​​‌​​​‌‌​‌‌‌​‌‌​​​​‌​‌‌​​‌‌​​​‌‌‌​​‌​‌‌​​‌​​​​‌‌​‌​‌​‌‌​​​‌‌​​‌‌‌​​​",
+  "attachments": []
+}

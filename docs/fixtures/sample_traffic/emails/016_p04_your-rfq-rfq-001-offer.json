@@ -1,0 +1,11 @@
+{
+  "id": "sample-016",
+  "from": "fatima.alsayed@alsayedtrading.example",
+  "to": "candidate@sim.local",
+  "subject": "Your RFQ RFQ-001: offer",
+  "sim_time_hours": 120.44,
+  "body": "see attached image w/ the quote — will send a proper pdf next week. Fatima Al-Sayed",
+  "attachments": [
+    "016_PXL_1179.png"
+  ]
+}

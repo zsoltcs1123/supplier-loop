@@ -1,0 +1,9 @@
+{
+  "id": "sample-018",
+  "from": "fatima.alsayed@alsayedtrading.example",
+  "to": "candidate@sim.local",
+  "subject": "Re: can we meet in the middle (RFQ-002)",
+  "sim_time_hours": 293.46,
+  "body": "Hi,\n\nWe can't get to that number — 15% below our quote is outside what we can do on this order (Steel I-Beam 200mm and the rest). Best we can offer is 16843.42 total.\n\nFatima Al-Sayed",
+  "attachments": []
+}
