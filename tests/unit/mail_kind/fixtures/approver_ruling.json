@@ -1,0 +1,9 @@
+{
+  "id": "sample-approver-001",
+  "from": "approver@sim.local",
+  "to": "candidate@sim.local",
+  "subject": "[REF:p01] ruling",
+  "sim_time_hours": 130.0,
+  "body": "Approved.\n",
+  "attachments": []
+}
