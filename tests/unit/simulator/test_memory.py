@@ -171,3 +171,66 @@ def test_memory_submit_results_stores_payload_when_called() -> None:
 
     assert echo.warnings == []
     assert simulator.last_submission() == payload
+
+
+@pytest.mark.unit
+def test_memory_getters_return_copies_when_caller_mutates() -> None:
+    attachment = Attachment(
+        id="att-1",
+        filename="quote.pdf",
+        mime_type="application/pdf",
+        content=b"%PDF-1.4",
+    )
+    inbox_entry = InboxEntry(
+        id="in-1",
+        from_address="p01@sim.local",
+        to_address="buyer@sim.local",
+        subject="Quote",
+        sim_time_hours=1.0,
+        attachment_ids=["att-1"],
+    )
+    simulator = _simulator(inbox=[inbox_entry], attachments={"att-1": attachment})
+    payload = {
+        "p01": SubmitEntry(
+            line_items=[
+                SubmitLineItem(
+                    material_id="STL-BEAM-200",
+                    quantity=100.0,
+                    unit_price=40.0,
+                    total=4000.0,
+                )
+            ],
+            payment_terms="Net 30",
+            validity_days=14,
+            grand_total=4000.0,
+            action_taken="extract",
+            auto_approved=True,
+        )
+    }
+
+    simulator.get_assignment().rfq_id = "RFQ-HACKED"
+    simulator.get_supplier_directory().clear()
+    simulator.get_price_history().clear()
+    simulator.get_sim_clock().round_id = "other"
+    simulator.list_inbox()[0].subject = "Hacked"
+    inbox_entry.subject = "Mutated constructor"
+    attachment.filename = "mutated.pdf"
+    simulator.download_attachment("att-1").filename = "other.pdf"
+    simulator.submit_results(payload)
+    payload["p01"].action_taken = "escalated"
+    stored = simulator.last_submission()
+    assert stored is not None
+    stored["p01"].action_taken = "reminded"
+    simulator.send_email("p01@sim.local", "RFQ", "Please quote")
+    simulator.sent_emails()[0].subject = "CHANGED"
+
+    assert simulator.get_assignment().rfq_id == "RFQ-001"
+    assert len(simulator.get_supplier_directory()) == 2
+    assert len(simulator.get_price_history()) == 1
+    assert simulator.get_sim_clock().round_id == "dev-1"
+    assert simulator.list_inbox()[0].subject == "Quote"
+    assert simulator.download_attachment("att-1").filename == "quote.pdf"
+    reloaded = simulator.last_submission()
+    assert reloaded is not None
+    assert reloaded["p01"].action_taken == "extract"
+    assert simulator.sent_emails()[0].subject == "RFQ"

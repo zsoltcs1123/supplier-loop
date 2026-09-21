@@ -19,7 +19,7 @@ Python version: [3.11](https://docs.python.org/3/whatsnew/3.11.html). When uncer
 
 - **SRP** - Each module has one responsibility. When a module serves multiple consumers for different reasons, extract the shared concern into its own module.
 - **No cross-module private imports** - Never import `_`-prefixed functions from another module. If you need it, make it public or extract it to a shared module.
-- **Dataclasses for data models** - Prefer `@dataclass` over regular classes
+- **Dataclasses for data models** - Prefer `@dataclass` over regular classes. Use Pydantic `BaseModel` for schemas and durable state (`docs/SEED.md`).
 - **Data models in separate files** - Do not mix data models with services/functions
 - **RERO** - Receive an object, return an object; avoid primitive obsession for domain concepts
 - **Pure functions** - Avoid side effects where possible
