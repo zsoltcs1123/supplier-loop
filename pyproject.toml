@@ -8,7 +8,9 @@ version = "0.1.0"
 description = "Supplier quoting loop for the LeadFlow Automation challenge"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
-dependencies = []
+dependencies = [
+    "pydantic>=2.13.5",
+]
 
 [tool.uv.workspace]
 members = ["packages/*"]
