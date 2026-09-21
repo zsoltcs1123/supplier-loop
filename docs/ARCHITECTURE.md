@@ -131,7 +131,7 @@ the same quote sent twice keeps one entry. Per-supplier fields and the submit pa
 | Extract          | OpenRouter HTTP at runtime, fixture mock in tests                              |
 | Vision           | The same OpenRouter call, vision-capable model                                 |
 
-Unit work and orchestrator work use `mock`. Plumbing smoke uses a cheap vision-capable model. Pre-exam tune may use a stronger model. Runtime default is `openai/gpt-4o-mini` via `OPENROUTER_MODEL`.
+Unit work and orchestrator work use `mock`. Runtime extract, including photo vision, uses `google/gemini-2.5-pro` via `OPENROUTER_MODEL`.
 
 ---
 
@@ -200,6 +200,7 @@ model whether to escalate. The mock extract adapter is how most of the loop is b
 
 | Version | Date       | Changes                                                                                                                                                                                                                 |
 | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.6     | 2026-09-21 | Runtime extract model `google/gemini-2.5-pro`.                                                                                                                                                                         |
 | 1.5     | 2026-09-21 | PyMuPDF for PDF text. Runtime extract model `openai/gpt-4o-mini`.                                                                                                                                                      |
 | 1.4     | 2026-09-21 | Drop the why table. Drop stack rationale. Keep the shape and the open items.                                                                                                                                           |
 | 1.3     | 2026-09-21 | Tighten prose. One name per module. Merge alternatives into why. Drop repeated rules.                                                                                                                                   |

@@ -139,6 +139,25 @@ def test_submitter_auto_approved_false_when_approver_asks_for_specifics() -> Non
 
 
 @pytest.mark.unit
+def test_submitter_auto_approved_false_when_ruling_says_not_approving() -> None:
+    sent = [
+        SentEmailRecord(
+            id="sent-1",
+            to="approver@sim.local",
+            subject="[REF:p02] class 2",
+            body="Class 2: quantity mismatch.",
+        )
+    ]
+    supplier = _supplier(escalation_classes=[2])
+    supplier.approver_rulings = [
+        "Yes, the quantity is off versus what we requested. "
+        "Not approving that — have them requote at the right quantity."
+    ]
+
+    assert derive_auto_approved(supplier, sent, "approver@sim.local") is False
+
+
+@pytest.mark.unit
 def test_submitter_builds_entry_with_recomputed_totals() -> None:
     entry = build_submit_entry(_supplier(), [], "approver@sim.local")
 

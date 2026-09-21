@@ -269,6 +269,7 @@ def test_orchestrator_corrects_once_after_approver_rejects_missing_line(tmp_path
     assert revised_mails
     assert "Quote now on file:" in revised_mails[0].body
     assert "STL-BEAM-200" in revised_mails[0].body
+    assert "missing BOM" not in revised_mails[0].body
 
     simulator.push_inbox(
         InboxEntry(

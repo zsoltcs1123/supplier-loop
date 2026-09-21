@@ -151,7 +151,7 @@ been quiet for a sim-time margin you choose. Cap iterations so the loop also sto
 - OpenRouter HTTP for the runtime LLM. Cursor is the editor. The loop cannot call Cursor. One key. The hard cap is $100 for every runtime call in development rounds and the exam together. Spend is recorded in `.artifacts/llm-spend.json`.
   The loop must run on the issued key without code changes.
 - PyMuPDF for PDFs with a text layer. The same OpenRouter model does vision on photo screenshots.
-- Default `OPENROUTER_MODEL` is `openai/gpt-4o-mini` when the variable is unset.
+- Default `OPENROUTER_MODEL` is `google/gemini-2.5-pro` when the variable is unset.
 - `PYTHONIOENCODING=utf-8`. Email bodies contain watermarks. Do not strip them.
 
 Reviewer-facing names, fixed by the FAQ:
@@ -160,7 +160,7 @@ Reviewer-facing names, fixed by the FAQ:
 SUPPLIER_SIM_MCP_URL=https://tools.scalepod.ai/supplier-sim/mcp
 SUPPLIER_SIM_TOKEN
 OPENROUTER_API_KEY      # optional for ping; required for run-dev
-OPENROUTER_MODEL        # optional; defaults to openai/gpt-4o-mini
+OPENROUTER_MODEL        # optional; defaults to google/gemini-2.5-pro
 ```
 
 Document every other env var in the README and `.env.example`. Token is personal, per candidate, and is not stored in the repo.

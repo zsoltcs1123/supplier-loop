@@ -3,6 +3,8 @@ from typing import cast
 import pytest
 
 from supplier_loop.machine.constants import (
+    PDF_PHOTO_QUIET_MARGIN_SIM_SECONDS,
+    PDF_PHOTO_REMINDER_THRESHOLD_SIM_SECONDS,
     QUIET_MARGIN_SIM_SECONDS,
     REMINDER_THRESHOLD_SIM_SECONDS,
     VALIDITY_ALARM_MARGIN_DAYS,
@@ -87,6 +89,41 @@ def test_due_alarms_returns_reminder_due_when_threshold_passed() -> None:
     state = _round_state(sim_seconds=3600.0 + REMINDER_THRESHOLD_SIM_SECONDS)
 
     assert "reminder_due" in due_alarms(state)
+
+
+def _as_pdf_supplier(state: RoundState) -> RoundState:
+    state.rfq.directory[0] = SupplierEntry(
+        supplier_id="p03",
+        email="y.tanaka@tanakaprecision.example",
+        material_ids=["STL-BEAM-200"],
+    )
+    supplier = state.suppliers.pop("p01")
+    supplier.supplier_id = "p03"
+    supplier.email = "y.tanaka@tanakaprecision.example"
+    state.suppliers["p03"] = supplier
+    return state
+
+
+@pytest.mark.unit
+def test_due_alarms_holds_pdf_supplier_past_text_reminder_threshold() -> None:
+    state = _as_pdf_supplier(_round_state(sim_seconds=3600.0 + REMINDER_THRESHOLD_SIM_SECONDS))
+
+    assert "reminder_due" not in due_alarms(state)
+
+    state.rfq.clock.sim_time_seconds = 3600.0 + PDF_PHOTO_REMINDER_THRESHOLD_SIM_SECONDS
+    assert "reminder_due" in due_alarms(state)
+
+
+@pytest.mark.unit
+def test_due_alarms_holds_pdf_supplier_past_one_quiet_day() -> None:
+    reminder_at = 90_000.0
+    state = _as_pdf_supplier(_round_state(sim_seconds=reminder_at + QUIET_MARGIN_SIM_SECONDS))
+    state.suppliers["p03"].reminder_sim_time = reminder_at
+
+    assert "round_done" not in due_alarms(state)
+
+    state.rfq.clock.sim_time_seconds = reminder_at + PDF_PHOTO_QUIET_MARGIN_SIM_SECONDS
+    assert "round_done" in due_alarms(state)
 
 
 @pytest.mark.unit

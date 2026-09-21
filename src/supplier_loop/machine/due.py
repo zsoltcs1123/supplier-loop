@@ -1,6 +1,6 @@
 from supplier_loop.machine.constants import (
-    REMINDER_THRESHOLD_SIM_SECONDS,
     VALIDITY_ALARM_MARGIN_DAYS,
+    reminder_threshold_seconds,
 )
 from supplier_loop.relevance import relevant_supplier_ids
 from supplier_loop.round_state.models import RoundState, SupplierFacts
@@ -25,7 +25,8 @@ def reminder_is_due(supplier: SupplierFacts, sim_time: float) -> bool:
         return False
     if supplier.awaiting_since_sim_time is None:
         return False
-    return sim_time - supplier.awaiting_since_sim_time >= REMINDER_THRESHOLD_SIM_SECONDS
+    threshold = reminder_threshold_seconds(supplier.supplier_id)
+    return sim_time - supplier.awaiting_since_sim_time >= threshold
 
 
 def _has_reminder_due(state: RoundState) -> bool:

@@ -6,16 +6,27 @@ from supplier_loop.round_state.models import RoundState
 from supplier_loop.simulator.port import EmailMessage, Simulator
 
 _REF_PATTERN = re.compile(r"\[REF:([^\]]+)\]", re.IGNORECASE)
-_REJECTION_PATTERN = re.compile(r"\breject", re.IGNORECASE)
+_REJECTION_PATTERN = re.compile(r"\breject|\bdisapprov", re.IGNORECASE)
 _APPROVAL_PATTERN = re.compile(r"\bapprov", re.IGNORECASE)
+_NEGATION_PATTERN = re.compile(r"\b(?:not|no|never|cannot|cant)\b|n't\b", re.IGNORECASE)
 
 
 def is_rejection_ruling(body: str) -> bool:
-    return _REJECTION_PATTERN.search(body) is not None
+    if _REJECTION_PATTERN.search(body) is not None:
+        return True
+    return _has_negated_approval(body)
 
 
 def is_approval_ruling(body: str) -> bool:
     return _APPROVAL_PATTERN.search(body) is not None and not is_rejection_ruling(body)
+
+
+def _has_negated_approval(body: str) -> bool:
+    for match in _APPROVAL_PATTERN.finditer(body):
+        window = body[max(0, match.start() - 32) : match.start()]
+        if _NEGATION_PATTERN.search(window) is not None:
+            return True
+    return False
 
 
 def handle_approver_ruling(

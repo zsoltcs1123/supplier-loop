@@ -103,4 +103,4 @@ def test_build_extractor_uses_default_model_when_env_blank(
 
     extractor = build_extractor(spend_path=tmp_path / "llm-spend.json")
 
-    assert extractor.model == "openai/gpt-4o-mini"
+    assert extractor.model == "google/gemini-2.5-pro"
