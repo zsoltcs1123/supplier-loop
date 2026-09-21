@@ -17,6 +17,10 @@ APPROVER_ADDRESS = "approver@sim.local"
 _QUOTE_WORD = re.compile(r"\b(?:quote|quotation|offer|pricing)\b", re.IGNORECASE)
 _ITEM_QTY = re.compile(r"\bqty\s+\d+", re.IGNORECASE)
 _ITEM_TIMES = re.compile(r"\d+(?:[.,]\d+)?\s*[x×]\s*\d+(?:[.,]\d+)?")
+_ITEM_X_TOTAL = re.compile(
+    r"\d+(?:[.,]\d+)?\b.*[x×]\s*\d+(?:[.,]\d+)?\b.*\btotal\s+\d+(?:[.,]\d+)?",
+    re.IGNORECASE,
+)
 _ITEM_CURRENCY = re.compile(r"(?:USD|\$)\s*\d|(?:\d+(?:[.,]\d+)?\s*USD)", re.IGNORECASE)
 _ITEM_THREE_NUMS = re.compile(r"\d+(?:[.,]\d+)?(?:(?:[|\t;]| {2,})\s*\d+(?:[.,]\d+)?){2,}")
 _NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
@@ -103,6 +107,7 @@ def _is_priced_item_line(line: str) -> bool:
     return bool(
         _ITEM_QTY.search(line)
         or _ITEM_TIMES.search(line)
+        or _ITEM_X_TOTAL.search(line)
         or _ITEM_THREE_NUMS.search(line)
         or (_ITEM_CURRENCY.search(line) and len(_NUMBER.findall(line)) >= 2)
     )

@@ -73,6 +73,26 @@ def test_classify_mail_returns_quote_when_same_sender_subject_body_differs() -> 
 
 
 @pytest.mark.unit
+def test_classify_mail_returns_quote_when_unit_sits_between_qty_and_price() -> None:
+    message = EmailMessage(
+        id="in-x-total",
+        from_address="marta.novak@novaksteel.example",
+        to_address="candidate@sim.local",
+        subject="Your RFQ RFQ-005: offer",
+        sim_time_hours=47.0,
+        attachment_ids=[],
+        body=(
+            "Pricing follows.\n\n"
+            "· 100 pcs Brass Fitting 1/2in x 6.18 per pcs, total 618.00\n"
+            "· 100 m PVC Pipe 50mm x 4.58 per m, total 458.00\n\n"
+            "Payment Net 30 / validity 30 days / total 1076.00 USD\n"
+        ),
+    )
+
+    assert classify_mail(message) == "quote"
+
+
+@pytest.mark.unit
 def test_classify_mail_returns_negotiation_reply_when_body_is_number_only() -> None:
     message = EmailMessage(
         id="in-number",
