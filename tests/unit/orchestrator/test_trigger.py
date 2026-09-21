@@ -2,7 +2,9 @@ import pytest
 
 from supplier_loop.orchestrator.trigger import should_run_pass
 from supplier_loop.round_state.models import (
+    AsSentQuote,
     DedupRegistry,
+    QuoteRecord,
     RfqContext,
     RoundState,
     SupplierFacts,
@@ -128,3 +130,24 @@ def test_trigger_skips_pass_when_no_delta_and_no_idle_relevant() -> None:
     )
 
     assert should_run_pass(state) is False
+
+
+@pytest.mark.unit
+def test_trigger_runs_pass_when_quote_has_no_line_items() -> None:
+    state = _state(
+        phases={"p01": "quoted", "p02": "awaiting_quote"},
+        inbox_ids=["in-1"],
+        seen_ids={"in-1"},
+    )
+    state.suppliers["p01"].quote = QuoteRecord(
+        as_sent=AsSentQuote(
+            line_items=[],
+            payment_terms="Net 30",
+            validity_days=30,
+            grand_total=0.0,
+        ),
+        recomputed_total=0.0,
+        recomputed_grand_total=0.0,
+    )
+
+    assert should_run_pass(state) is True

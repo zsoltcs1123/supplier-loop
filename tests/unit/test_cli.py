@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from supplier_loop.cli import load_dotenv, ping, require_credentials
+from supplier_loop.cli import build_parser, load_dotenv, ping, require_credentials
 
 
 class _PingSession:
@@ -61,3 +61,19 @@ def test_ping_writes_clock_when_session_returns_tools_and_clock(tmp_path: Path) 
     assert "mode=dev" in text
     assert "clock_factor=60" in text
     assert "dev_rounds=0/20 remaining=20" in text
+
+
+@pytest.mark.unit
+def test_parser_defaults_poll_and_max_passes_when_run_dev() -> None:
+    args = build_parser().parse_args(["run-dev"])
+
+    assert args.poll_seconds == 5.0
+    assert args.max_passes == 2880
+
+
+@pytest.mark.unit
+def test_parser_accepts_poll_and_max_passes_when_resume_dev() -> None:
+    args = build_parser().parse_args(["resume-dev", "--poll-seconds", "2.5", "--max-passes", "12"])
+
+    assert args.poll_seconds == 2.5
+    assert args.max_passes == 12

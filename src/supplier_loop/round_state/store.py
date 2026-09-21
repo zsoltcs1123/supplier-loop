@@ -58,6 +58,11 @@ class RoundStore:
         return RoundState.model_validate_json(path.read_text(encoding="utf-8"))
 
     def wipe(self) -> None:
-        path = self._root / "round.json"
-        if path.exists():
-            path.unlink()
+        for name in ("round.json", "sent.json"):
+            path = self._root / name
+            if path.exists():
+                path.unlink()
+
+    @property
+    def root(self) -> Path:
+        return self._root

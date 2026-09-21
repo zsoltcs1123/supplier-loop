@@ -92,10 +92,12 @@ def test_snapshot_and_wipe_preserves_log_when_round_state_cleared(
             detail={"note": "watermark \u2014 kept"},
         )
     )
+    (round_root / "sent.json").write_text("[]", encoding="utf-8")
 
     store.wipe()
 
     assert not (round_root / "round.json").exists()
+    assert not (round_root / "sent.json").exists()
     with pytest.raises(FileNotFoundError):
         store.load()
 

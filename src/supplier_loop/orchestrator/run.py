@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from typing import TextIO
 
 from supplier_loop.extract.port import Extractor
+from supplier_loop.extract.schema import ExtractAttachment
 from supplier_loop.machine.advance import advance_suppliers, mark_quote_received
 from supplier_loop.machine.answer import answer_question
 from supplier_loop.machine.due import due_alarms
@@ -17,9 +18,10 @@ from supplier_loop.orchestrator.trigger import should_run_pass
 from supplier_loop.progress import emit_progress
 from supplier_loop.quote_pipeline.pipeline import process_inbound_mail
 from supplier_loop.relevance import supplier_for_address
+from supplier_loop.round_state.fingerprint import quote_fingerprint
 from supplier_loop.round_state.models import RoundState
 from supplier_loop.round_state.store import RoundStore
-from supplier_loop.simulator.port import Simulator, SubmitEntry
+from supplier_loop.simulator.port import EmailMessage, InboxEntry, Simulator, SubmitEntry
 from supplier_loop.submitter.submit import build_submit_payload, round_ready_to_submit
 
 
@@ -30,7 +32,9 @@ def run_pass(
     log: OperationalLog,
     *,
     progress: TextIO | None = None,
+    empty_quote_retries: set[str] | None = None,
 ) -> bool:
+    retries = empty_quote_retries if empty_quote_retries is not None else set()
     state = store.load()
     state.inbox = simulator.list_inbox()
     state.rfq.clock = simulator.get_sim_clock()
@@ -45,7 +49,14 @@ def run_pass(
         )
     if not should_run_pass(state):
         return False
-    _ingest_inbox(state, simulator, extractor, log, progress=progress)
+    _ingest_inbox(
+        state,
+        simulator,
+        extractor,
+        log,
+        progress=progress,
+        empty_quote_retries=retries,
+    )
     send_pending_rfqs(state, simulator, log, progress=progress)
     if "reminder_due" in due_alarms(state):
         send_due_reminders(state, simulator, log, progress=progress)
@@ -89,8 +100,16 @@ def run_until_submit(
     sleeper: Callable[[float], None] | None = None,
 ) -> dict[str, SubmitEntry]:
     pause = sleeper or time.sleep
+    empty_quote_retries: set[str] = set()
     for _ in range(max_passes):
-        if run_pass(simulator, store, extractor, log, progress=progress):
+        if run_pass(
+            simulator,
+            store,
+            extractor,
+            log,
+            progress=progress,
+            empty_quote_retries=empty_quote_retries,
+        ):
             return build_submit_payload(store.load(), simulator)
         if pause_seconds > 0:
             pause(pause_seconds)
@@ -104,50 +123,128 @@ def _ingest_inbox(
     log: OperationalLog,
     *,
     progress: TextIO | None = None,
+    empty_quote_retries: set[str],
 ) -> None:
     for entry in state.inbox:
-        if entry.id in state.dedup.email_ids:
+        retry = _needs_quote_retry(state, entry, empty_quote_retries)
+        if entry.id in state.dedup.email_ids and not retry:
             continue
-        message = simulator.read_email(entry.id)
-        directory_entry = supplier_for_address(state, message.from_address)
-        kind = "unknown"
-        if directory_entry is not None:
-            supplier = state.suppliers[directory_entry.supplier_id]
-            kind = process_inbound_mail(
-                message,
-                supplier=supplier,
-                rfq=state.rfq,
-                dedup=state.dedup,
-                extractor=extractor,
+        _ingest_entry(
+            state,
+            simulator,
+            extractor,
+            log,
+            entry_id=entry.id,
+            retry=retry,
+            progress=progress,
+            empty_quote_retries=empty_quote_retries,
+        )
+
+
+def _ingest_entry(
+    state: RoundState,
+    simulator: Simulator,
+    extractor: Extractor,
+    log: OperationalLog,
+    *,
+    entry_id: str,
+    retry: bool,
+    progress: TextIO | None,
+    empty_quote_retries: set[str],
+) -> None:
+    message = simulator.read_email(entry_id)
+    if retry:
+        state.dedup.quote_fingerprints.discard(quote_fingerprint(message))
+    kind = _route_inbound(state, simulator, extractor, message)
+    _note_empty_quote(state, message, empty_quote_retries)
+    state.dedup.email_ids.add(entry_id)
+    sim_time = state.rfq.clock.sim_time_seconds
+    log.append(
+        LogEvent(
+            wall_time=datetime.now(UTC),
+            sim_time_seconds=sim_time,
+            kind="ingest",
+            detail={"email_id": entry_id, "mail_kind": kind},
+        )
+    )
+    if progress is not None:
+        emit_progress(
+            progress,
+            sim_time_seconds=sim_time,
+            kind="ingest",
+            subject=f"{entry_id} {kind} {message.from_address} {message.subject}",
+        )
+
+
+def _route_inbound(
+    state: RoundState,
+    simulator: Simulator,
+    extractor: Extractor,
+    message: EmailMessage,
+) -> str:
+    directory_entry = supplier_for_address(state, message.from_address)
+    if directory_entry is not None:
+        supplier = state.suppliers[directory_entry.supplier_id]
+        kind = process_inbound_mail(
+            message,
+            supplier=supplier,
+            rfq=state.rfq,
+            dedup=state.dedup,
+            extractor=extractor,
+            attachments=_extract_attachments(simulator, message),
+        )
+        if kind == "quote" and supplier.quote is not None:
+            mark_quote_received(
+                supplier,
+                sim_time_days=state.rfq.clock.sim_time_days,
             )
-            if kind == "quote" and supplier.quote is not None:
-                mark_quote_received(
-                    supplier,
-                    sim_time_days=state.rfq.clock.sim_time_days,
-                )
-            elif kind == "question":
-                answer_question(supplier, state, simulator, message)
-            elif kind == "negotiation_reply":
-                record_negotiation_reply(supplier, message)
-            elif kind == "duplicate":
-                pass
-        elif message.from_address.casefold() == state.rfq.assignment.approver_email.casefold():
-            kind = classify_mail(message, seen_fingerprints=state.dedup.quote_fingerprints)
-            handle_approver_ruling(message, state, simulator)
-        state.dedup.email_ids.add(entry.id)
-        sim_time = state.rfq.clock.sim_time_seconds
-        log.append(
-            LogEvent(
-                wall_time=datetime.now(UTC),
-                sim_time_seconds=sim_time,
-                kind="ingest",
-                detail={"email_id": entry.id, "mail_kind": kind},
+        elif kind == "question":
+            answer_question(supplier, state, simulator, message)
+        elif kind == "negotiation_reply":
+            record_negotiation_reply(supplier, message)
+        return kind
+    if message.from_address.casefold() == state.rfq.assignment.approver_email.casefold():
+        handle_approver_ruling(message, state, simulator)
+        return classify_mail(message, seen_fingerprints=state.dedup.quote_fingerprints)
+    return "unknown"
+
+
+def _needs_quote_retry(
+    state: RoundState,
+    entry: InboxEntry,
+    empty_quote_retries: set[str],
+) -> bool:
+    if entry.id in empty_quote_retries:
+        return False
+    directory_entry = supplier_for_address(state, entry.from_address)
+    if directory_entry is None:
+        return False
+    quote = state.suppliers[directory_entry.supplier_id].quote
+    return quote is not None and not quote.as_sent.line_items
+
+
+def _note_empty_quote(
+    state: RoundState,
+    message: EmailMessage,
+    empty_quote_retries: set[str],
+) -> None:
+    directory_entry = supplier_for_address(state, message.from_address)
+    if directory_entry is None:
+        return
+    quote = state.suppliers[directory_entry.supplier_id].quote
+    if quote is not None and not quote.as_sent.line_items:
+        empty_quote_retries.add(message.id)
+
+
+def _extract_attachments(simulator: Simulator, message: EmailMessage) -> list[ExtractAttachment]:
+    attachments: list[ExtractAttachment] = []
+    for attachment_id in message.attachment_ids:
+        downloaded = simulator.download_attachment(attachment_id)
+        attachments.append(
+            ExtractAttachment(
+                filename=downloaded.filename,
+                mime_type=downloaded.mime_type,
+                content=downloaded.content,
             )
         )
-        if progress is not None:
-            emit_progress(
-                progress,
-                sim_time_seconds=sim_time,
-                kind="ingest",
-                subject=f"{entry.id} {kind} {entry.from_address} {entry.subject}",
-            )
+    return attachments

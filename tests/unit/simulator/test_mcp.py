@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from pathlib import Path
 
 import pytest
 
@@ -197,6 +198,23 @@ def test_mcp_list_sent_records_outbound_when_send_email_succeeds() -> None:
     assert sent[0].to == "p01@sim.local"
     assert sent[0].subject == "RFQ"
     assert sent[0].body == "Please quote"
+
+
+@pytest.mark.unit
+def test_mcp_list_sent_reloads_outbound_when_sent_log_exists(tmp_path: Path) -> None:
+    session = FakeSession()
+    session.handlers["send_email"] = lambda _args: {"id": "sent-9"}
+    log_path = tmp_path / "sent.json"
+    first = McpSimulator(session, sent_log=log_path)
+    first.send_email("approver@sim.local", "[REF:p01] class 1", "Class 1: missing BOM line.")
+
+    second = McpSimulator(FakeSession(), sent_log=log_path)
+    sent = second.list_sent()
+
+    assert len(sent) == 1
+    assert sent[0].id == "sent-9"
+    assert sent[0].to == "approver@sim.local"
+    assert "[REF:p01]" in sent[0].subject
 
 
 @pytest.mark.unit

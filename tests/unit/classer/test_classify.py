@@ -125,7 +125,19 @@ def _quote_record(
 @pytest.mark.unit
 def test_required_classes_includes_class_1_when_catalog_line_missing_from_quote() -> None:
     rfq = _rfq()
-    quote = _quote_record(as_sent=_as_sent(line_items=[]))
+    quote = _quote_record(
+        as_sent=_as_sent(
+            line_items=[
+                QuoteLine(
+                    material_id="CU-WIRE-10",
+                    description="Copper Wire 10AWG",
+                    quantity=1.0,
+                    unit_price=1.0,
+                    total=1.0,
+                )
+            ]
+        )
+    )
 
     assert required_classes(
         quote,
@@ -134,6 +146,23 @@ def test_required_classes_includes_class_1_when_catalog_line_missing_from_quote(
         injection_suspected=False,
         own_quote_history=[],
     ) == frozenset({1})
+
+
+@pytest.mark.unit
+def test_required_classes_omits_class_1_when_quote_has_no_line_items() -> None:
+    rfq = _rfq()
+    quote = _quote_record(as_sent=_as_sent(line_items=[]))
+
+    assert (
+        required_classes(
+            quote,
+            rfq,
+            supplier_id="p01",
+            injection_suspected=False,
+            own_quote_history=[],
+        )
+        == frozenset()
+    )
 
 
 @pytest.mark.unit

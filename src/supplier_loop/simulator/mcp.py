@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import json
+import os
+import tempfile
+from pathlib import Path
+
 from supplier_loop.simulator.port import (
     Assignment,
     Attachment,
@@ -27,9 +32,10 @@ from supplier_loop.simulator.wire import (
 
 
 class McpSimulator:
-    def __init__(self, caller: ToolCaller) -> None:
+    def __init__(self, caller: ToolCaller, *, sent_log: Path | None = None) -> None:
         self._caller = caller
-        self._sent: list[SentEmailRecord] = []
+        self._sent_log = sent_log
+        self._sent = _load_sent(sent_log)
         self._last_echo: SubmitEcho | None = None
 
     def get_assignment(self) -> Assignment:
@@ -63,6 +69,7 @@ class McpSimulator:
             self._caller.call_tool("send_email", {"to": to, "subject": subject, "body": body})
         )
         self._sent.append(SentEmailRecord(id=email_id, to=to, subject=subject, body=body))
+        _save_sent(self._sent_log, self._sent)
         return email_id
 
     def list_sent(self) -> list[SentEmailRecord]:
@@ -82,3 +89,28 @@ class McpSimulator:
 
     def request_dev_round(self) -> object:
         return self._caller.call_tool("request_dev_round")
+
+
+def _load_sent(path: Path | None) -> list[SentEmailRecord]:
+    if path is None or not path.exists():
+        return []
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(raw, list):
+        raise TypeError("sent log must be a list")
+    return [SentEmailRecord.model_validate(item) for item in raw]
+
+
+def _save_sent(path: Path | None, sent: list[SentEmailRecord]) -> None:
+    if path is None:
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = json.dumps([mail.model_dump() for mail in sent])
+    fd, tmp_path = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(payload)
+        os.replace(tmp_path, path)
+    except BaseException:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        raise

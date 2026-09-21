@@ -10,6 +10,7 @@ class ExtractAttachment(BaseModel):
 
     filename: str
     mime_type: str
+    content: bytes = b""
 
 
 class ExtractRequest(BaseModel):

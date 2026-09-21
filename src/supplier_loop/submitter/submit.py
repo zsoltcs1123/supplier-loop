@@ -1,5 +1,5 @@
 from supplier_loop.machine.constants import QUIET_MARGIN_SIM_SECONDS
-from supplier_loop.machine.ruling import is_rejection_ruling
+from supplier_loop.machine.ruling import is_approval_ruling
 from supplier_loop.quote_pipeline.recompute import recomputed_line_total
 from supplier_loop.relevance import relevant_supplier_ids
 from supplier_loop.round_state.models import RoundState, SupplierFacts
@@ -127,7 +127,7 @@ def _supplier_ready_for_submit(supplier: SupplierFacts) -> bool:
 def _has_approver_approval(supplier: SupplierFacts) -> bool:
     if not supplier.approver_rulings:
         return False
-    return not is_rejection_ruling(supplier.approver_rulings[-1])
+    return is_approval_ruling(supplier.approver_rulings[-1])
 
 
 def _has_escalation_mail(

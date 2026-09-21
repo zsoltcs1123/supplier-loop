@@ -121,6 +121,24 @@ def test_submitter_auto_approved_true_when_approver_approved_after_escalation() 
 
 
 @pytest.mark.unit
+def test_submitter_auto_approved_false_when_approver_asks_for_specifics() -> None:
+    sent = [
+        SentEmailRecord(
+            id="sent-1",
+            to="approver@sim.local",
+            subject="[REF:p01] class 1",
+            body="Class 1: missing BOM line(s): STL-BEAM-200.",
+        )
+    ]
+    supplier = _supplier(escalation_classes=[1])
+    supplier.approver_rulings = [
+        "I need specifics before I can rule on this — tell me exactly what looks wrong."
+    ]
+
+    assert derive_auto_approved(supplier, sent, "approver@sim.local") is False
+
+
+@pytest.mark.unit
 def test_submitter_builds_entry_with_recomputed_totals() -> None:
     entry = build_submit_entry(_supplier(), [], "approver@sim.local")
 

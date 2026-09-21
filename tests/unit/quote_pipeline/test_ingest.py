@@ -1,7 +1,7 @@
 import pytest
 
 from supplier_loop.extract.fixture import FixtureExtractor
-from supplier_loop.extract.schema import ExtractResult
+from supplier_loop.extract.schema import ExtractAttachment, ExtractResult
 from supplier_loop.quote_pipeline.pipeline import process_inbound_mail
 from supplier_loop.round_state.models import (
     AsSentQuote,
@@ -261,3 +261,25 @@ def test_process_inbound_mail_does_not_call_extract_when_number_only_reply() -> 
     assert kind == "negotiation_reply"
     assert extractor.requests == []
     assert supplier.quote.as_sent.line_items == before
+
+
+@pytest.mark.unit
+def test_process_inbound_mail_passes_attachment_bytes_when_downloaded() -> None:
+    message = load_sample_email("sample-001").model_copy(update={"attachment_ids": ["att_02_0001"]})
+    extractor = FixtureExtractor({message.id: _extract_result()})
+    attachment = ExtractAttachment(
+        filename="Terms_addendum_1.pdf",
+        mime_type="application/pdf",
+        content=b"%PDF-1.4 fake",
+    )
+
+    process_inbound_mail(
+        message,
+        supplier=_supplier(),
+        rfq=_rfq(),
+        dedup=DedupRegistry(),
+        extractor=extractor,
+        attachments=[attachment],
+    )
+
+    assert extractor.requests[0].attachments == [attachment]

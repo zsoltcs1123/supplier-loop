@@ -94,7 +94,15 @@ def _p01_quote(*, unit_price: float = 40.0, injection: bool = False) -> ExtractR
 
 def _missing_line_quote() -> ExtractResult:
     return ExtractResult(
-        line_items=[],
+        line_items=[
+            QuoteLine(
+                material_id="ADMIN-1",
+                description="admin line",
+                quantity=1.0,
+                unit_price=0.0,
+                total=0.0,
+            )
+        ],
         payment_terms="Net 30",
         validity_days=14,
         grand_total=0.0,
@@ -433,7 +441,15 @@ def test_orchestrator_sends_separate_ref_mails_when_several_classes_apply(tmp_pa
     extractor = FixtureExtractor(
         {
             "in-multi": ExtractResult(
-                line_items=[],
+                line_items=[
+                    QuoteLine(
+                        material_id="ADMIN-1",
+                        description="admin line",
+                        quantity=1.0,
+                        unit_price=0.0,
+                        total=0.0,
+                    )
+                ],
                 payment_terms="Net 60",
                 validity_days=14,
                 grand_total=0.0,

@@ -23,11 +23,7 @@ _STATE_ROOT = Path(".artifacts")
 
 def main(argv: list[str] | None = None) -> None:
     """Run ping or a live development round against the simulator."""
-    parser = argparse.ArgumentParser(prog="supplier-loop")
-    sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("ping", help="verify MCP connectivity without starting a round")
-    sub.add_parser("run-dev", help="call request_dev_round and run until submit_results")
-    sub.add_parser("resume-dev", help="continue the current round until submit_results")
+    parser = build_parser()
     args = parser.parse_args(argv)
     load_dotenv(Path(".env"))
     url, token = require_credentials()
@@ -36,12 +32,52 @@ def main(argv: list[str] | None = None) -> None:
             ping(session, sys.stdout)
             return
         if args.command == "run-dev":
-            run_dev_round(session, sys.stdout)
+            run_dev_round(
+                session,
+                sys.stdout,
+                pause_seconds=args.poll_seconds,
+                max_passes=args.max_passes,
+            )
             return
         if args.command == "resume-dev":
-            continue_dev_round(session, sys.stdout)
+            continue_dev_round(
+                session,
+                sys.stdout,
+                pause_seconds=args.poll_seconds,
+                max_passes=args.max_passes,
+            )
             return
         raise AssertionError(args.command)
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="supplier-loop")
+    loop_opts = argparse.ArgumentParser(add_help=False)
+    loop_opts.add_argument(
+        "--poll-seconds",
+        type=float,
+        default=_POLL_SECONDS,
+        help="seconds to wait between passes",
+    )
+    loop_opts.add_argument(
+        "--max-passes",
+        type=int,
+        default=_MAX_PASSES,
+        help="stop after this many poll passes",
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("ping", help="verify MCP connectivity without starting a round")
+    sub.add_parser(
+        "run-dev",
+        parents=[loop_opts],
+        help="call request_dev_round and run until submit_results",
+    )
+    sub.add_parser(
+        "resume-dev",
+        parents=[loop_opts],
+        help="continue the current round until submit_results",
+    )
+    return parser
 
 
 def ping(
@@ -71,12 +107,12 @@ def run_dev_round(
     max_passes: int = _MAX_PASSES,
     budget_path: Path = DEFAULT_BUDGET_PATH,
 ) -> dict[str, SubmitEntry]:
-    simulator = McpSimulator(session)
+    round_store = store or RoundStore(_STATE_ROOT / "round")
+    round_store.wipe()
+    simulator = McpSimulator(session, sent_log=round_store.root / "sent.json")
     simulator.request_dev_round()
     budget = record_dev_round(simulator.get_sim_clock().round_id, budget_path)
     out.write(f"dev_rounds={budget.used}/{budget.cap} remaining={budget.remaining}\n")
-    round_store = store or RoundStore(_STATE_ROOT / "round")
-    round_store.wipe()
     snapshot_world(simulator, round_store)
     ops = log or OperationalLog(_STATE_ROOT / "ops.jsonl")
     return _finish_round(
@@ -98,13 +134,13 @@ def continue_dev_round(
     pause_seconds: float = _POLL_SECONDS,
     max_passes: int = _MAX_PASSES,
 ) -> dict[str, SubmitEntry]:
-    simulator = McpSimulator(session)
+    round_store = store or RoundStore(_STATE_ROOT / "round")
+    simulator = McpSimulator(session, sent_log=round_store.root / "sent.json")
     clock = simulator.get_sim_clock()
     out.write(
         f"resume round_id={clock.round_id} mode={clock.mode} "
         f"sim_time_seconds={clock.sim_time_seconds:g}\n"
     )
-    round_store = store or RoundStore(_STATE_ROOT / "round")
     ops = log or OperationalLog(_STATE_ROOT / "ops.jsonl")
     return _finish_round(
         simulator,

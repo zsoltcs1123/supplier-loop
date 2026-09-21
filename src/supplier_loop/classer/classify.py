@@ -15,7 +15,9 @@ def required_classes(
     assignment = rfq.assignment
     catalog = _supplier_material_ids(rfq.directory, supplier_id)
 
-    if _has_missing_bom_line(as_sent.line_items, assignment.line_items, catalog):
+    if as_sent.line_items and _has_missing_bom_line(
+        as_sent.line_items, assignment.line_items, catalog
+    ):
         classes.add(1)
     if _has_quantity_mismatch(as_sent.line_items, assignment.line_items, catalog):
         classes.add(2)

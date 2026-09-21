@@ -7,10 +7,15 @@ from supplier_loop.simulator.port import EmailMessage, Simulator
 
 _REF_PATTERN = re.compile(r"\[REF:([^\]]+)\]", re.IGNORECASE)
 _REJECTION_PATTERN = re.compile(r"\breject", re.IGNORECASE)
+_APPROVAL_PATTERN = re.compile(r"\bapprov", re.IGNORECASE)
 
 
 def is_rejection_ruling(body: str) -> bool:
     return _REJECTION_PATTERN.search(body) is not None
+
+
+def is_approval_ruling(body: str) -> bool:
+    return _APPROVAL_PATTERN.search(body) is not None and not is_rejection_ruling(body)
 
 
 def handle_approver_ruling(
