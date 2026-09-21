@@ -11,7 +11,7 @@ uv sync --dev && uv pip install -e .
 prek install --hook-type pre-commit --hook-type commit-msg
 ```
 
-Copy `.env.example` to `.env` and fill in credentials when you have them. The live names are `SUPPLIER_SIM_MCP_URL`, `SUPPLIER_SIM_TOKEN`, and optionally `OPENROUTER_API_KEY` / `OPENROUTER_MODEL`.
+Copy `.env.example` to `.env` and fill in credentials when you have them. The live names are `SUPPLIER_SIM_MCP_URL`, `SUPPLIER_SIM_TOKEN`, and optionally `OPENROUTER_API_KEY` / `OPENROUTER_MODEL`. `OPENROUTER_MODEL` defaults to `openai/gpt-4o-mini`. `run-dev` needs the OpenRouter key. Spend against the $100 cap is recorded in `.artifacts/llm-spend.json`.
 
 ```bash
 uv run python -m supplier_loop ping      # MCP connectivity; does not start a round

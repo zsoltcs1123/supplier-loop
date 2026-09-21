@@ -12,6 +12,7 @@ from supplier_loop.round_state.models import (
     SupplierFacts,
 )
 from supplier_loop.simulator.port import Assignment, BomLine, EmailMessage, SimClock
+from tests.unit.quote_pipeline.test_pdf_text import pdf_with_text
 from tests.unit.sample_traffic import load_approver_ruling, load_sample_email
 
 
@@ -264,13 +265,37 @@ def test_process_inbound_mail_does_not_call_extract_when_number_only_reply() -> 
 
 
 @pytest.mark.unit
-def test_process_inbound_mail_passes_attachment_bytes_when_downloaded() -> None:
-    message = load_sample_email("sample-001").model_copy(update={"attachment_ids": ["att_02_0001"]})
+def test_process_inbound_mail_inlines_pdf_text_and_drops_pdf_bytes() -> None:
+    message = load_sample_email("sample-001").model_copy(update={"attachment_ids": ["att_pdf"]})
     extractor = FixtureExtractor({message.id: _extract_result()})
     attachment = ExtractAttachment(
-        filename="Terms_addendum_1.pdf",
+        filename="tanaka-offer.pdf",
         mime_type="application/pdf",
-        content=b"%PDF-1.4 fake",
+        content=pdf_with_text("qty 50 Steel I-Beam 200mm 42.29 USD\nNet 30"),
+    )
+
+    process_inbound_mail(
+        message,
+        supplier=_supplier(),
+        rfq=_rfq(),
+        dedup=DedupRegistry(),
+        extractor=extractor,
+        attachments=[attachment],
+    )
+
+    request = extractor.requests[0]
+    assert "qty 50 Steel I-Beam 200mm 42.29 USD" in request.body
+    assert request.attachments == []
+
+
+@pytest.mark.unit
+def test_process_inbound_mail_keeps_photo_bytes_for_vision() -> None:
+    message = load_sample_email("sample-001").model_copy(update={"attachment_ids": ["att_png"]})
+    extractor = FixtureExtractor({message.id: _extract_result()})
+    attachment = ExtractAttachment(
+        filename="quote.png",
+        mime_type="image/png",
+        content=b"\x89PNG\r\n",
     )
 
     process_inbound_mail(

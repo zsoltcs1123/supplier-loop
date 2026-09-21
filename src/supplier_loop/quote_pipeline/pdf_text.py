@@ -1,0 +1,19 @@
+from __future__ import annotations
+
+from typing import Any
+
+import pymupdf
+
+
+def read_pdf_text(content: bytes) -> str:
+    if not content:
+        return ""
+    try:
+        document: Any = pymupdf.open(stream=content, filetype="pdf")  # type: ignore[no-untyped-call]
+    except pymupdf.FileDataError:
+        return ""
+    try:
+        chunks = [str(page.get_text()).strip() for page in document]
+    finally:
+        document.close()
+    return "\n\n".join(chunk for chunk in chunks if chunk)

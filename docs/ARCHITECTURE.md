@@ -127,11 +127,11 @@ the same quote sent twice keeps one entry. Per-supplier fields and the submit pa
 | Extract schema   | Pydantic, quote fields plus `injection_suspected` only, extra fields forbidden |
 | Durable state    | Human-readable files on disk, separate from the log                            |
 | Operational log  | Append-only files                                                              |
-| PDF text         | Text-layer reader, library still open                                          |
+| PDF text         | PyMuPDF text-layer reader in the quote pipeline                                |
 | Extract          | OpenRouter HTTP at runtime, fixture mock in tests                              |
 | Vision           | The same OpenRouter call, vision-capable model                                 |
 
-Unit work and orchestrator work use `mock`. Plumbing smoke uses a cheap vision-capable model. Pre-exam tune uses a stronger model. The exam model id stays open in [docs/SEED.md](SEED.md).
+Unit work and orchestrator work use `mock`. Plumbing smoke uses a cheap vision-capable model. Pre-exam tune may use a stronger model. Runtime default is `openai/gpt-4o-mini` via `OPENROUTER_MODEL`.
 
 ---
 
@@ -192,7 +192,7 @@ model whether to escalate. The mock extract adapter is how most of the loop is b
 | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Backup injection heuristic                                                                                        | A live round misses known traps such as exemption language in sample traffic | The scan may set `injection_suspected` only. It does not pick an action from prose. Out of scope for the first milestone |
 | PDF-reader port                                                                                                   | A second reader is actually needed                                           | Then the seam is real. Not before                                                                                        |
-| Silence threshold, quiet margin, poll interval compared with sim clock factor, exam model id, rejection-cycle cap | Still open in [docs/SEED.md](SEED.md)                                        | Tests bind the values. This file does not pick them                                                                      |
+| Silence threshold, quiet margin, poll interval compared with sim clock factor, rejection-cycle cap | Still open in [docs/SEED.md](SEED.md)                                        | Tests bind the values. This file does not pick them                                                                      |
 
 ---
 
@@ -200,6 +200,7 @@ model whether to escalate. The mock extract adapter is how most of the loop is b
 
 | Version | Date       | Changes                                                                                                                                                                                                                 |
 | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.5     | 2026-09-21 | PyMuPDF for PDF text. Runtime extract model `openai/gpt-4o-mini`.                                                                                                                                                      |
 | 1.4     | 2026-09-21 | Drop the why table. Drop stack rationale. Keep the shape and the open items.                                                                                                                                           |
 | 1.3     | 2026-09-21 | Tighten prose. One name per module. Merge alternatives into why. Drop repeated rules.                                                                                                                                   |
 | 1.2     | 2026-09-21 | Deepen planned modules: Quote record, classer split from machine, evidence-derived submit, two simulator adapters, state versus log, mail kind, correction versus negotiation paths. Clock policy stays on the machine. |

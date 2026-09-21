@@ -8,7 +8,9 @@ from pathlib import Path
 from typing import TextIO
 
 from supplier_loop.dev_rounds import DEFAULT_BUDGET_PATH, load_budget, record_dev_round
-from supplier_loop.extract.crude import CrudeExtractor
+from supplier_loop.extract.openrouter import DEFAULT_MODEL, OpenRouterExtractor
+from supplier_loop.extract.port import Extractor
+from supplier_loop.extract.spend import DEFAULT_SPEND_PATH, load_spend
 from supplier_loop.operational_log.log import OperationalLog
 from supplier_loop.orchestrator.run import run_until_submit
 from supplier_loop.round_state.store import RoundStore, snapshot_world
@@ -31,10 +33,12 @@ def main(argv: list[str] | None = None) -> None:
         if args.command == "ping":
             ping(session, sys.stdout)
             return
+        extractor = build_extractor()
         if args.command == "run-dev":
             run_dev_round(
                 session,
                 sys.stdout,
+                extractor=extractor,
                 pause_seconds=args.poll_seconds,
                 max_passes=args.max_passes,
             )
@@ -43,6 +47,7 @@ def main(argv: list[str] | None = None) -> None:
             continue_dev_round(
                 session,
                 sys.stdout,
+                extractor=extractor,
                 pause_seconds=args.poll_seconds,
                 max_passes=args.max_passes,
             )
@@ -85,6 +90,7 @@ def ping(
     out: TextIO,
     *,
     budget_path: Path = DEFAULT_BUDGET_PATH,
+    spend_path: Path = DEFAULT_SPEND_PATH,
 ) -> None:
     names = session.list_tool_names()
     out.write("tools: " + ", ".join(names) + "\n")
@@ -95,12 +101,15 @@ def ping(
     )
     budget = load_budget(budget_path)
     out.write(f"dev_rounds={budget.used}/{budget.cap} remaining={budget.remaining}\n")
+    spend = load_spend(spend_path)
+    out.write(f"llm_spend={spend.used:.4f}/{spend.cap:g} remaining={spend.remaining:.4f}\n")
 
 
 def run_dev_round(
     session: ToolCaller,
     out: TextIO,
     *,
+    extractor: Extractor,
     store: RoundStore | None = None,
     log: OperationalLog | None = None,
     pause_seconds: float = _POLL_SECONDS,
@@ -120,6 +129,7 @@ def run_dev_round(
         round_store,
         ops,
         out,
+        extractor=extractor,
         pause_seconds=pause_seconds,
         max_passes=max_passes,
     )
@@ -129,6 +139,7 @@ def continue_dev_round(
     session: ToolCaller,
     out: TextIO,
     *,
+    extractor: Extractor,
     store: RoundStore | None = None,
     log: OperationalLog | None = None,
     pause_seconds: float = _POLL_SECONDS,
@@ -147,6 +158,7 @@ def continue_dev_round(
         round_store,
         ops,
         out,
+        extractor=extractor,
         pause_seconds=pause_seconds,
         max_passes=max_passes,
     )
@@ -158,13 +170,14 @@ def _finish_round(
     ops: OperationalLog,
     out: TextIO,
     *,
+    extractor: Extractor,
     pause_seconds: float,
     max_passes: int,
 ) -> dict[str, SubmitEntry]:
     payload = run_until_submit(
         simulator,
         round_store,
-        CrudeExtractor(),
+        extractor,
         ops,
         progress=out,
         pause_seconds=pause_seconds,
@@ -195,6 +208,18 @@ def require_credentials() -> tuple[str, str]:
     if not url or not token:
         raise SystemExit("Set SUPPLIER_SIM_MCP_URL and SUPPLIER_SIM_TOKEN")
     return url, token
+
+
+def build_extractor(*, spend_path: Path | None = None) -> OpenRouterExtractor:
+    key = os.environ.get("OPENROUTER_API_KEY", "").strip()
+    if not key:
+        raise SystemExit("Set OPENROUTER_API_KEY")
+    model = os.environ.get("OPENROUTER_MODEL", "").strip() or DEFAULT_MODEL
+    return OpenRouterExtractor(
+        api_key=key,
+        model=model,
+        spend_path=spend_path or DEFAULT_SPEND_PATH,
+    )
 
 
 def _unquote(value: str) -> str:

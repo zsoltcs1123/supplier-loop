@@ -148,9 +148,10 @@ been quiet for a sim-time margin you choose. Cap iterations so the loop also sto
 
 - Python 3.11, managed with `uv`
 - MCP client, Pydantic for schemas and state
-- OpenRouter HTTP for the runtime LLM. Cursor is the editor. The loop cannot call Cursor. One key. The hard cap is $100 for every runtime call in development rounds and the exam together. Track spend.
+- OpenRouter HTTP for the runtime LLM. Cursor is the editor. The loop cannot call Cursor. One key. The hard cap is $100 for every runtime call in development rounds and the exam together. Spend is recorded in `.artifacts/llm-spend.json`.
   The loop must run on the issued key without code changes.
-- PyMuPDF or similar for PDFs with a text layer. A vision model for photo screenshots.
+- PyMuPDF for PDFs with a text layer. The same OpenRouter model does vision on photo screenshots.
+- Default `OPENROUTER_MODEL` is `openai/gpt-4o-mini` when the variable is unset.
 - `PYTHONIOENCODING=utf-8`. Email bodies contain watermarks. Do not strip them.
 
 Reviewer-facing names, fixed by the FAQ:
@@ -158,8 +159,8 @@ Reviewer-facing names, fixed by the FAQ:
 ```
 SUPPLIER_SIM_MCP_URL=https://tools.scalepod.ai/supplier-sim/mcp
 SUPPLIER_SIM_TOKEN
-OPENROUTER_API_KEY      # optional
-OPENROUTER_MODEL        # optional
+OPENROUTER_API_KEY      # optional for ping; required for run-dev
+OPENROUTER_MODEL        # optional; defaults to openai/gpt-4o-mini
 ```
 
 Document every other env var in the README and `.env.example`. Token is personal, per candidate, and is not stored in the repo.
@@ -242,7 +243,6 @@ The spec does not publish these.
 - Silence reminder threshold. Count in sim-days. A reminder that is too early is scored against you.
 - Inbox-quiet sim-time margin for round-done
 - Poll interval versus sim clock factor
-- Which model id `OPENROUTER_MODEL` names
 - Loop iteration cap for approver rejection cycles
 
 ## Risks

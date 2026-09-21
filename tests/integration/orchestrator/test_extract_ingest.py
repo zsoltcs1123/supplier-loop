@@ -18,6 +18,7 @@ from supplier_loop.simulator.port import (
     SimClock,
     SupplierEntry,
 )
+from tests.unit.quote_pipeline.test_pdf_text import pdf_with_text
 
 
 def _simulator(*, attachments: dict[str, Attachment] | None = None) -> InMemorySimulator:
@@ -107,14 +108,15 @@ def _quote_mail(*, attachment_ids: list[str] | None = None) -> InboxEntry:
 
 
 @pytest.mark.integration
-def test_run_pass_downloads_attachments_before_extract(tmp_path: Path) -> None:
+def test_run_pass_inlines_pdf_text_before_extract(tmp_path: Path) -> None:
     store = RoundStore(tmp_path / "round")
     log = OperationalLog(tmp_path / "ops.jsonl")
+    pdf_bytes = pdf_with_text("qty 100 Steel I-Beam 200mm 40.00 USD")
     attachment = Attachment(
         id="att_02_0001",
-        filename="Terms_addendum_1.pdf",
+        filename="tanaka-offer.pdf",
         mime_type="application/pdf",
-        content=b"%PDF-1.4 terms",
+        content=pdf_bytes,
     )
     simulator = _simulator(attachments={"att_02_0001": attachment})
     snapshot_world(simulator, store)
@@ -124,8 +126,8 @@ def test_run_pass_downloads_attachments_before_extract(tmp_path: Path) -> None:
 
     run_pass(simulator, store, extractor, log)
 
-    assert extractor.requests[0].attachments[0].filename == "Terms_addendum_1.pdf"
-    assert extractor.requests[0].attachments[0].content == b"%PDF-1.4 terms"
+    assert extractor.requests[0].attachments == []
+    assert "qty 100 Steel I-Beam 200mm 40.00 USD" in extractor.requests[0].body
 
 
 @pytest.mark.integration

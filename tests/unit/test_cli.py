@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from supplier_loop.cli import build_parser, load_dotenv, ping, require_credentials
+from supplier_loop.cli import build_extractor, build_parser, load_dotenv, ping, require_credentials
 
 
 class _PingSession:
@@ -53,7 +53,12 @@ def test_require_credentials_exits_when_token_missing(monkeypatch: pytest.Monkey
 def test_ping_writes_clock_when_session_returns_tools_and_clock(tmp_path: Path) -> None:
     out = StringIO()
 
-    ping(_PingSession(), out, budget_path=tmp_path / "dev-rounds.json")
+    ping(
+        _PingSession(),
+        out,
+        budget_path=tmp_path / "dev-rounds.json",
+        spend_path=tmp_path / "llm-spend.json",
+    )
 
     text = out.getvalue()
     assert "get_sim_clock" in text
@@ -61,6 +66,7 @@ def test_ping_writes_clock_when_session_returns_tools_and_clock(tmp_path: Path) 
     assert "mode=dev" in text
     assert "clock_factor=60" in text
     assert "dev_rounds=0/20 remaining=20" in text
+    assert "llm_spend=0.0000/100 remaining=100.0000" in text
 
 
 @pytest.mark.unit
@@ -77,3 +83,24 @@ def test_parser_accepts_poll_and_max_passes_when_resume_dev() -> None:
 
     assert args.poll_seconds == 2.5
     assert args.max_passes == 12
+
+
+@pytest.mark.unit
+def test_build_extractor_exits_when_api_key_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    monkeypatch.delenv("OPENROUTER_MODEL", raising=False)
+
+    with pytest.raises(SystemExit, match="OPENROUTER_API_KEY"):
+        build_extractor()
+
+
+@pytest.mark.unit
+def test_build_extractor_uses_default_model_when_env_blank(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("OPENROUTER_API_KEY", "sk-test")
+    monkeypatch.setenv("OPENROUTER_MODEL", "")
+
+    extractor = build_extractor(spend_path=tmp_path / "llm-spend.json")
+
+    assert extractor.model == "openai/gpt-4o-mini"
