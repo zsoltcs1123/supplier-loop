@@ -2,11 +2,14 @@ from datetime import UTC, datetime
 from typing import TextIO
 
 from supplier_loop.extract.port import Extractor
-from supplier_loop.machine.happy import (
-    advance_quoted_suppliers,
-    mark_quote_received,
-    send_pending_rfqs,
-)
+from supplier_loop.machine.advance import advance_suppliers, mark_quote_received
+from supplier_loop.machine.answer import answer_question
+from supplier_loop.machine.due import due_alarms
+from supplier_loop.machine.happy import send_pending_rfqs
+from supplier_loop.machine.negotiate import record_negotiation_reply
+from supplier_loop.machine.remind import send_due_reminders
+from supplier_loop.machine.ruling import handle_approver_ruling
+from supplier_loop.mail_kind.classify import classify_mail
 from supplier_loop.operational_log.log import LogEvent, OperationalLog
 from supplier_loop.orchestrator.relevance import supplier_for_address
 from supplier_loop.orchestrator.trigger import should_run_pass
@@ -34,7 +37,9 @@ def run_pass(
         return False
     _ingest_inbox(state, simulator, extractor, log, progress=progress)
     send_pending_rfqs(state, simulator, log, progress=progress)
-    advance_quoted_suppliers(state)
+    if "reminder_due" in due_alarms(state):
+        send_due_reminders(state, simulator, log, progress=progress)
+    advance_suppliers(state, simulator)
 
     submitted = False
     if round_ready_to_submit(state):
@@ -103,7 +108,19 @@ def _ingest_inbox(
                 extractor=extractor,
             )
             if kind == "quote" and supplier.quote is not None:
-                mark_quote_received(supplier)
+                mark_quote_received(
+                    supplier,
+                    sim_time_days=state.rfq.clock.sim_time_days,
+                )
+            elif kind == "question":
+                answer_question(supplier, state, simulator, message)
+            elif kind == "negotiation_reply":
+                record_negotiation_reply(supplier)
+            elif kind == "duplicate":
+                pass
+        elif message.from_address.casefold() == state.rfq.assignment.approver_email.casefold():
+            kind = classify_mail(message, seen_fingerprints=state.dedup.quote_fingerprints)
+            handle_approver_ruling(message, state, simulator)
         state.dedup.email_ids.add(entry.id)
         sim_time = state.rfq.clock.sim_time_seconds
         log.append(

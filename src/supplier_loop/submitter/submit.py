@@ -36,7 +36,7 @@ def build_submit_entry(
     quote = supplier.quote
     if quote is None:
         raise ValueError(f"missing quote for {supplier.supplier_id}")
-    as_sent = quote.as_sent
+    document = quote.revised_as_sent or quote.as_sent
     line_items = [
         SubmitLineItem(
             material_id=line.material_id or "",
@@ -44,15 +44,30 @@ def build_submit_entry(
             unit_price=line.unit_price,
             total=recomputed_line_total(line.quantity, line.unit_price),
         )
-        for line in as_sent.line_items
+        for line in document.line_items
     ]
     return SubmitEntry(
         line_items=line_items,
-        payment_terms=as_sent.payment_terms,
-        validity_days=as_sent.validity_days,
+        payment_terms=document.payment_terms,
+        validity_days=document.validity_days,
         grand_total=quote.recomputed_grand_total,
         action_taken=derive_action_taken(supplier, sent, approver_email),
         auto_approved=derive_auto_approved(supplier, sent, approver_email),
+    )
+
+
+def build_reminded_entry(
+    supplier: SupplierFacts,
+    sent: list[SentEmailRecord],
+    approver_email: str,
+) -> SubmitEntry:
+    return SubmitEntry(
+        line_items=[],
+        payment_terms="",
+        validity_days=0,
+        grand_total=0.0,
+        action_taken=derive_action_taken(supplier, sent, approver_email),
+        auto_approved=False,
     )
 
 
@@ -62,7 +77,10 @@ def build_submit_payload(state: RoundState, simulator: Simulator) -> dict[str, S
     payload: dict[str, SubmitEntry] = {}
     for supplier_id in sorted(relevant_supplier_ids(state)):
         supplier = state.suppliers[supplier_id]
-        if supplier.phase != "done" or supplier.quote is None:
+        if not _supplier_ready_for_submit(supplier):
+            continue
+        if supplier.quote is None:
+            payload[supplier_id] = build_reminded_entry(supplier, sent, approver_email)
             continue
         payload[supplier_id] = build_submit_entry(supplier, sent, approver_email)
     return payload
@@ -74,9 +92,17 @@ def round_ready_to_submit(state: RoundState) -> bool:
         return False
     for supplier_id in relevant:
         supplier = state.suppliers[supplier_id]
-        if supplier.phase != "done" or supplier.quote is None:
+        if not _supplier_ready_for_submit(supplier):
             return False
     return True
+
+
+def _supplier_ready_for_submit(supplier: SupplierFacts) -> bool:
+    if supplier.phase == "done" and supplier.quote is not None:
+        return True
+    if supplier.reminder_sim_time is not None and supplier.quote is None:
+        return True
+    return supplier.phase == "escalated" and supplier.quote is not None
 
 
 def _has_escalation_mail(

@@ -83,3 +83,31 @@ def test_submitter_builds_entry_with_recomputed_totals() -> None:
     assert entry.grand_total == 4000.0
     assert entry.payment_terms == "Net 30"
     assert entry.validity_days == 14
+
+
+@pytest.mark.unit
+def test_submitter_uses_revised_as_sent_when_present() -> None:
+    supplier = _supplier()
+    assert supplier.quote is not None
+    supplier.quote.revised_as_sent = AsSentQuote(
+        line_items=[
+            QuoteLine(
+                material_id="STL-BEAM-200",
+                description="Steel I-Beam 200mm",
+                quantity=100.0,
+                unit_price=42.0,
+                total=4200.0,
+            )
+        ],
+        payment_terms="Net 30",
+        validity_days=21,
+        grand_total=4200.0,
+    )
+    supplier.quote.recomputed_total = 4200.0
+    supplier.quote.recomputed_grand_total = 4200.0
+
+    entry = build_submit_entry(supplier, [], "approver@sim.local")
+
+    assert entry.line_items[0].unit_price == 42.0
+    assert entry.validity_days == 21
+    assert entry.grand_total == 4200.0

@@ -42,7 +42,13 @@ def process_inbound_mail(
     if kind != "quote":
         return kind
     extracted = extractor.extract(_extract_request(message, attachments))
-    supplier.quote = build_quote_record(extracted, rfq)
+    record = build_quote_record(extracted, rfq)
+    if supplier.correction_used and supplier.quote is not None:
+        supplier.quote.revised_as_sent = record.as_sent
+        supplier.quote.recomputed_total = record.recomputed_total
+        supplier.quote.recomputed_grand_total = record.recomputed_grand_total
+    else:
+        supplier.quote = record
     supplier.injection_suspected = extracted.injection_suspected
     dedup.quote_fingerprints.add(fingerprint)
     return kind

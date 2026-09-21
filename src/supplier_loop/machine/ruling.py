@@ -1,0 +1,60 @@
+import re
+
+from supplier_loop.machine.correct import correct_once
+from supplier_loop.machine.negotiate import negotiate_once
+from supplier_loop.round_state.models import RoundState
+from supplier_loop.simulator.port import EmailMessage, Simulator
+
+_REF_PATTERN = re.compile(r"\[REF:([^\]]+)\]", re.IGNORECASE)
+_REJECTION_PATTERN = re.compile(r"\breject", re.IGNORECASE)
+
+
+def handle_approver_ruling(
+    message: EmailMessage,
+    state: RoundState,
+    simulator: Simulator,
+) -> None:
+    supplier_id = _supplier_id_from_subject(message.subject)
+    if supplier_id is None or supplier_id not in state.suppliers:
+        return
+    supplier = state.suppliers[supplier_id]
+    supplier.approver_rulings.append(message.body)
+    if not _is_rejection(message.body):
+        return
+    class_num = _class_from_ruling(message.body, supplier.escalation_classes)
+    if class_num in {1, 2, 3, 4}:
+        supplier.last_rejection_class = class_num
+        correct_once(supplier, state, simulator, class_num)
+    elif class_num == 5:
+        negotiate_once(supplier, state, simulator)
+
+
+def _supplier_id_from_subject(subject: str) -> str | None:
+    match = _REF_PATTERN.search(subject)
+    if match is None:
+        return None
+    return match.group(1)
+
+
+def _is_rejection(body: str) -> bool:
+    return _REJECTION_PATTERN.search(body) is not None
+
+
+def _class_from_ruling(body: str, escalation_classes: list[int]) -> int:
+    for class_num in (1, 2, 3, 4, 5, 6, 7):
+        if re.search(rf"\bclass\s+{class_num}\b", body, re.IGNORECASE):
+            return class_num
+    return _strongest_class(escalation_classes)
+
+
+def _strongest_class(classes: list[int]) -> int:
+    content = sorted(class_num for class_num in classes if class_num in {1, 2, 3, 4, 7})
+    if content:
+        return content[0]
+    if 6 in classes:
+        return 6
+    if 5 in classes:
+        return 5
+    if classes:
+        return classes[0]
+    return 1
