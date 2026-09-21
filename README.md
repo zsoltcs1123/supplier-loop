@@ -11,7 +11,14 @@ uv sync --dev && uv pip install -e .
 prek install --hook-type pre-commit --hook-type commit-msg
 ```
 
-Copy `.env.example` to `.env` and fill in credentials when you have them. See [docs/SEED.md](docs/SEED.md) for required env var names.
+Copy `.env.example` to `.env` and fill in credentials when you have them. The live names are `SUPPLIER_SIM_MCP_URL`, `SUPPLIER_SIM_TOKEN`, and optionally `OPENROUTER_API_KEY` / `OPENROUTER_MODEL`.
+
+```bash
+uv run python -m supplier_loop ping      # MCP connectivity; does not start a round
+uv run python -m supplier_loop run-dev   # request_dev_round, then loop until submit_results
+```
+
+`ping` must succeed before `run-dev`. `request_dev_round` is capped at 20 calls per token. `run-dev` records each call in [dev-rounds.json](dev-rounds.json). Ping does not count.
 
 ## Development
 

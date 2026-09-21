@@ -4,7 +4,10 @@ import pytest
 
 from supplier_loop.extract.fixture import FixtureExtractor
 from supplier_loop.extract.schema import ExtractResult
-from supplier_loop.machine.constants import REMINDER_THRESHOLD_SIM_SECONDS
+from supplier_loop.machine.constants import (
+    QUIET_MARGIN_SIM_SECONDS,
+    REMINDER_THRESHOLD_SIM_SECONDS,
+)
 from supplier_loop.operational_log.log import OperationalLog
 from supplier_loop.orchestrator.run import run_pass
 from supplier_loop.round_state.models import QuoteLine
@@ -109,6 +112,10 @@ def test_orchestrator_sends_one_reminder_when_supplier_stays_silent(tmp_path: Pa
     reminder_after = 3600.0 + REMINDER_THRESHOLD_SIM_SECONDS + 1.0
     simulator.advance_clock(reminder_after, reminder_after / 86_400.0)
     run_pass(simulator, store, FixtureExtractor({}), log)
+    assert simulator.last_submission() is None
+
+    quiet_after = reminder_after + QUIET_MARGIN_SIM_SECONDS
+    simulator.advance_clock(quiet_after, quiet_after / 86_400.0)
     run_pass(simulator, store, FixtureExtractor({}), log)
 
     reminders = [

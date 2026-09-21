@@ -4,6 +4,7 @@ from supplier_loop.machine.constants import (
 )
 from supplier_loop.relevance import relevant_supplier_ids
 from supplier_loop.round_state.models import RoundState, SupplierFacts
+from supplier_loop.submitter.submit import round_ready_to_submit
 
 
 def due_alarms(state: RoundState) -> list[str]:
@@ -12,6 +13,8 @@ def due_alarms(state: RoundState) -> list[str]:
         alarms.append("reminder_due")
     if _has_validity_alarm(state):
         alarms.append("validity_alarm")
+    if round_ready_to_submit(state):
+        alarms.append("round_done")
     return alarms
 
 

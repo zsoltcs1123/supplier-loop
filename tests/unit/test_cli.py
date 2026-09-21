@@ -1,0 +1,63 @@
+import os
+from io import StringIO
+from pathlib import Path
+
+import pytest
+
+from supplier_loop.cli import load_dotenv, ping, require_credentials
+
+
+class _PingSession:
+    def __init__(self) -> None:
+        self.tools = ["get_sim_clock", "request_dev_round"]
+        self.clock = {
+            "sim_time_seconds": 12.0,
+            "sim_time_days": 0.0,
+            "round_id": "dev-1",
+            "mode": "dev",
+            "clock_factor": 60.0,
+        }
+
+    def list_tool_names(self) -> list[str]:
+        return list(self.tools)
+
+    def call_tool(self, name: str, arguments: dict[str, object] | None = None) -> object:
+        if name != "get_sim_clock":
+            raise AssertionError(name)
+        return self.clock
+
+
+@pytest.mark.unit
+def test_load_dotenv_sets_missing_keys_when_file_present(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("SUPPLIER_LOOP_DOTENV_TEST", raising=False)
+    path = tmp_path / ".env"
+    path.write_text("SUPPLIER_LOOP_DOTENV_TEST=from-file\n", encoding="utf-8")
+
+    load_dotenv(path)
+
+    assert os.environ["SUPPLIER_LOOP_DOTENV_TEST"] == "from-file"
+
+
+@pytest.mark.unit
+def test_require_credentials_exits_when_token_missing(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("SUPPLIER_SIM_MCP_URL", "https://example.test/mcp")
+    monkeypatch.delenv("SUPPLIER_SIM_TOKEN", raising=False)
+
+    with pytest.raises(SystemExit, match="SUPPLIER_SIM_TOKEN"):
+        require_credentials()
+
+
+@pytest.mark.unit
+def test_ping_writes_clock_when_session_returns_tools_and_clock(tmp_path: Path) -> None:
+    out = StringIO()
+
+    ping(_PingSession(), out, budget_path=tmp_path / "dev-rounds.json")
+
+    text = out.getvalue()
+    assert "get_sim_clock" in text
+    assert "round_id=dev-1" in text
+    assert "mode=dev" in text
+    assert "clock_factor=60" in text
+    assert "dev_rounds=0/20 remaining=20" in text

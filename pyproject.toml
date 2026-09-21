@@ -9,6 +9,7 @@ description = "Supplier quoting loop for the LeadFlow Automation challenge"
 readme = "README.md"
 requires-python = ">=3.11,<3.12"
 dependencies = [
+    "mcp>=2.2.0",
     "pydantic>=2.13.5",
 ]
 

@@ -1,3 +1,5 @@
+import time
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import TextIO
 
@@ -32,6 +34,15 @@ def run_pass(
     state = store.load()
     state.inbox = simulator.list_inbox()
     state.rfq.clock = simulator.get_sim_clock()
+    new_ids = [entry.id for entry in state.inbox if entry.id not in state.dedup.email_ids]
+    sim_time = state.rfq.clock.sim_time_seconds
+    if progress is not None:
+        emit_progress(
+            progress,
+            sim_time_seconds=sim_time,
+            kind="poll",
+            subject=f"inbox={len(state.inbox)} new={len(new_ids)}",
+        )
     if not should_run_pass(state):
         return False
     _ingest_inbox(state, simulator, extractor, log, progress=progress)
@@ -74,10 +85,15 @@ def run_until_submit(
     *,
     progress: TextIO | None = None,
     max_passes: int = 20,
+    pause_seconds: float = 0.0,
+    sleeper: Callable[[float], None] | None = None,
 ) -> dict[str, SubmitEntry]:
+    pause = sleeper or time.sleep
     for _ in range(max_passes):
         if run_pass(simulator, store, extractor, log, progress=progress):
             return build_submit_payload(store.load(), simulator)
+        if pause_seconds > 0:
+            pause(pause_seconds)
     raise RuntimeError("submit_results was not reached")
 
 
@@ -133,5 +149,5 @@ def _ingest_inbox(
                 progress,
                 sim_time_seconds=sim_time,
                 kind="ingest",
-                subject=f"{entry.id} {kind}",
+                subject=f"{entry.id} {kind} {entry.from_address} {entry.subject}",
             )

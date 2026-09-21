@@ -1,3 +1,4 @@
+from supplier_loop.machine.constants import QUIET_MARGIN_SIM_SECONDS
 from supplier_loop.machine.ruling import is_rejection_ruling
 from supplier_loop.quote_pipeline.recompute import recomputed_line_total
 from supplier_loop.relevance import relevant_supplier_ids
@@ -91,11 +92,28 @@ def round_ready_to_submit(state: RoundState) -> bool:
     relevant = relevant_supplier_ids(state)
     if not relevant:
         return False
+    any_silent = False
+    sim_time = state.rfq.clock.sim_time_seconds
     for supplier_id in relevant:
         supplier = state.suppliers[supplier_id]
         if not _supplier_ready_for_submit(supplier):
             return False
-    return True
+        if supplier.reminder_sim_time is not None and supplier.quote is None:
+            any_silent = True
+            if sim_time - supplier.reminder_sim_time < QUIET_MARGIN_SIM_SECONDS:
+                return False
+    return (not any_silent) or _inbox_quiet(state)
+
+
+def _inbox_quiet(state: RoundState) -> bool:
+    if any(entry.id not in state.dedup.email_ids for entry in state.inbox):
+        return False
+    last_inbound = 0.0
+    for entry in state.inbox:
+        last_inbound = max(last_inbound, entry.sim_time_hours * 3600.0)
+    if last_inbound == 0.0:
+        return True
+    return state.rfq.clock.sim_time_seconds - last_inbound >= QUIET_MARGIN_SIM_SECONDS
 
 
 def _supplier_ready_for_submit(supplier: SupplierFacts) -> bool:

@@ -3,6 +3,7 @@ from typing import cast
 import pytest
 
 from supplier_loop.machine.constants import (
+    QUIET_MARGIN_SIM_SECONDS,
     REMINDER_THRESHOLD_SIM_SECONDS,
     VALIDITY_ALARM_MARGIN_DAYS,
 )
@@ -94,6 +95,23 @@ def test_due_alarms_skips_second_reminder_when_already_sent() -> None:
     state.suppliers["p01"].reminder_sim_time = 90_000.0
 
     assert "reminder_due" not in due_alarms(state)
+
+
+@pytest.mark.unit
+def test_due_alarms_skips_round_done_when_reminder_wait_is_open() -> None:
+    state = _round_state(sim_seconds=90_001.0)
+    state.suppliers["p01"].reminder_sim_time = 90_000.0
+
+    assert "round_done" not in due_alarms(state)
+
+
+@pytest.mark.unit
+def test_due_alarms_returns_round_done_when_reminded_and_quiet_margin_elapsed() -> None:
+    reminder_at = 90_000.0
+    state = _round_state(sim_seconds=reminder_at + QUIET_MARGIN_SIM_SECONDS)
+    state.suppliers["p01"].reminder_sim_time = reminder_at
+
+    assert "round_done" in due_alarms(state)
 
 
 @pytest.mark.unit

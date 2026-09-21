@@ -124,6 +124,7 @@ def test_snapshot_and_wipe_progress_stays_separate_from_log(
         sim_time_seconds=500.0,
         kind="reminder_due",
         subject="p02 reminder_due",
+        wall_time=datetime(2026, 9, 21, 16, 9, 12),
     )
     log.append(
         LogEvent(
@@ -134,6 +135,6 @@ def test_snapshot_and_wipe_progress_stays_separate_from_log(
         )
     )
 
-    assert stream.getvalue() == "500s reminder_due p02 reminder_due\n"
+    assert stream.getvalue() == "16:09:12  8m 20s  reminder_due  p02 reminder_due\n"
     assert not stream.getvalue().startswith("{")
     assert len(log_path.read_text(encoding="utf-8").splitlines()) == 1
