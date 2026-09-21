@@ -2,8 +2,8 @@ from datetime import UTC, datetime
 from typing import TextIO
 
 from supplier_loop.operational_log.log import LogEvent, OperationalLog
-from supplier_loop.orchestrator.relevance import bom_lines_for_supplier, relevant_supplier_ids
 from supplier_loop.progress import emit_progress
+from supplier_loop.relevance import bom_lines_for_supplier, relevant_supplier_ids
 from supplier_loop.round_state.models import RoundState, SupplierFacts
 from supplier_loop.simulator.port import Assignment, BomLine, Simulator
 
@@ -15,6 +15,9 @@ def send_pending_rfqs(
     *,
     progress: TextIO | None = None,
 ) -> None:
+    for supplier in state.suppliers.values():
+        if supplier.phase == "rfq_sent":
+            supplier.phase = "awaiting_quote"
     for supplier_id in relevant_supplier_ids(state):
         supplier = state.suppliers[supplier_id]
         if supplier.phase != "idle":
@@ -36,7 +39,7 @@ def _send_rfq(
     body = _rfq_body(assignment, lines)
     email_id = simulator.send_email(supplier.email, subject, body)
     supplier.outbound_ids.append(email_id)
-    supplier.phase = "awaiting_quote"
+    supplier.phase = "rfq_sent"
     supplier.awaiting_since_sim_time = state.rfq.clock.sim_time_seconds
     sim_time = state.rfq.clock.sim_time_seconds
     if progress is not None:

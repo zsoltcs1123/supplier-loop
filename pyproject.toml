@@ -12,6 +12,10 @@ dependencies = [
     "pydantic>=2.13.5",
 ]
 
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+
 [tool.uv.workspace]
 members = ["packages/*"]
 

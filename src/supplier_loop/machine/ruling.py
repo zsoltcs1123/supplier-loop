@@ -9,6 +9,10 @@ _REF_PATTERN = re.compile(r"\[REF:([^\]]+)\]", re.IGNORECASE)
 _REJECTION_PATTERN = re.compile(r"\breject", re.IGNORECASE)
 
 
+def is_rejection_ruling(body: str) -> bool:
+    return _REJECTION_PATTERN.search(body) is not None
+
+
 def handle_approver_ruling(
     message: EmailMessage,
     state: RoundState,
@@ -19,7 +23,7 @@ def handle_approver_ruling(
         return
     supplier = state.suppliers[supplier_id]
     supplier.approver_rulings.append(message.body)
-    if not _is_rejection(message.body):
+    if not is_rejection_ruling(message.body):
         return
     class_num = _class_from_ruling(message.body, supplier.escalation_classes)
     if class_num in {1, 2, 3, 4}:
@@ -34,10 +38,6 @@ def _supplier_id_from_subject(subject: str) -> str | None:
     if match is None:
         return None
     return match.group(1)
-
-
-def _is_rejection(body: str) -> bool:
-    return _REJECTION_PATTERN.search(body) is not None
 
 
 def _class_from_ruling(body: str, escalation_classes: list[int]) -> int:

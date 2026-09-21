@@ -11,7 +11,7 @@ from supplier_loop.round_state.models import (
     RfqContext,
     SupplierFacts,
 )
-from supplier_loop.simulator.port import Assignment, BomLine, SimClock
+from supplier_loop.simulator.port import Assignment, BomLine, EmailMessage, SimClock
 from tests.unit.sample_traffic import load_approver_ruling, load_sample_email
 
 
@@ -183,7 +183,7 @@ def test_process_inbound_mail_leaves_as_sent_line_items_when_negotiation_reply()
 @pytest.mark.unit
 def test_process_inbound_mail_does_not_call_extract_when_duplicate() -> None:
     first = load_sample_email("sample-011")
-    second = load_sample_email("sample-012")
+    second = first.model_copy(update={"id": "sample-011-resend"})
     extractor = FixtureExtractor({first.id: _extract_result(), second.id: _extract_result()})
     supplier = _supplier(email="y.tanaka@tanakaprecision.example")
     dedup = DedupRegistry()
@@ -235,17 +235,29 @@ def test_process_inbound_mail_does_not_call_extract_when_approver_ruling() -> No
 
 
 @pytest.mark.unit
-def test_process_inbound_mail_passes_raw_body_when_kind_is_quote() -> None:
-    message = load_sample_email("sample-001")
+def test_process_inbound_mail_does_not_call_extract_when_number_only_reply() -> None:
+    message = EmailMessage(
+        id="in-number",
+        from_address="p01@sim.local",
+        to_address="buyer@sim.local",
+        subject="Re: Counter-offer for RFQ-001",
+        sim_time_hours=4.0,
+        attachment_ids=[],
+        body="4,200.00",
+    )
     extractor = FixtureExtractor({message.id: _extract_result()})
+    supplier = _supplier()
+    supplier.quote = _quote_record()
+    before = [line.model_copy(deep=True) for line in supplier.quote.as_sent.line_items]
 
-    process_inbound_mail(
+    kind = process_inbound_mail(
         message,
-        supplier=_supplier(),
+        supplier=supplier,
         rfq=_rfq(),
         dedup=DedupRegistry(),
         extractor=extractor,
     )
 
-    assert [request.email_id for request in extractor.requests] == [message.id]
-    assert extractor.requests[0].body == message.body
+    assert kind == "negotiation_reply"
+    assert extractor.requests == []
+    assert supplier.quote.as_sent.line_items == before

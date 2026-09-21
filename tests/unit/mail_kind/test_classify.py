@@ -2,6 +2,7 @@ import pytest
 
 from supplier_loop.mail_kind.classify import MailKind, classify_mail
 from supplier_loop.round_state.fingerprint import quote_fingerprint
+from supplier_loop.simulator.port import EmailMessage
 from tests.unit.sample_traffic import (
     email_from_json,
     load_approver_ruling,
@@ -32,13 +33,6 @@ _KIND_BY_ID: dict[str, MailKind] = {
     "sample-020": "quote",
 }
 
-_QUESTION_IDS = ("sample-005", "sample-006")
-_NEGOTIATION_IDS = ("sample-004", "sample-018")
-_INLINE_QUOTE_IDS = ("sample-001", "sample-002", "sample-003")
-_PASTED_TABLE_IDS = ("sample-007", "sample-008", "sample-009", "sample-010")
-_PDF_QUOTE_IDS = ("sample-011", "sample-013", "sample-014", "sample-015")
-_PHOTO_QUOTE_IDS = ("sample-016", "sample-017", "sample-019", "sample-020")
-
 
 @pytest.mark.unit
 @pytest.mark.parametrize(
@@ -55,59 +49,9 @@ def test_classify_mail_returns_expected_kind_when_sample_traffic_loaded(
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("email_id", _QUESTION_IDS)
-def test_classify_mail_returns_question_when_body_has_no_quote_table(email_id: str) -> None:
-    message = load_sample_email(email_id)
-
-    assert classify_mail(message) == "question"
-
-
-@pytest.mark.unit
-@pytest.mark.parametrize("email_id", _NEGOTIATION_IDS)
-def test_classify_mail_returns_negotiation_reply_when_thread_has_no_table(
-    email_id: str,
-) -> None:
-    message = load_sample_email(email_id)
-
-    assert classify_mail(message) == "negotiation_reply"
-
-
-@pytest.mark.unit
-@pytest.mark.parametrize("email_id", _INLINE_QUOTE_IDS)
-def test_classify_mail_returns_quote_when_lines_are_inline(email_id: str) -> None:
-    message = load_sample_email(email_id)
-
-    assert classify_mail(message) == "quote"
-
-
-@pytest.mark.unit
-@pytest.mark.parametrize("email_id", _PASTED_TABLE_IDS)
-def test_classify_mail_returns_quote_when_table_is_pasted(email_id: str) -> None:
-    message = load_sample_email(email_id)
-
-    assert classify_mail(message) == "quote"
-
-
-@pytest.mark.unit
-@pytest.mark.parametrize("email_id", _PDF_QUOTE_IDS)
-def test_classify_mail_returns_quote_when_pdf_is_attached(email_id: str) -> None:
-    message = load_sample_email(email_id)
-
-    assert classify_mail(message) == "quote"
-
-
-@pytest.mark.unit
-@pytest.mark.parametrize("email_id", _PHOTO_QUOTE_IDS)
-def test_classify_mail_returns_quote_when_photo_is_attached(email_id: str) -> None:
-    message = load_sample_email(email_id)
-
-    assert classify_mail(message) == "quote"
-
-
-@pytest.mark.unit
 def test_classify_mail_returns_duplicate_when_quote_fingerprint_already_seen() -> None:
     first = load_sample_email("sample-011")
-    second = load_sample_email("sample-012")
+    second = first.model_copy(update={"id": "sample-011-resend"})
     fingerprint = quote_fingerprint(first)
     seen = {fingerprint}
 
@@ -118,10 +62,29 @@ def test_classify_mail_returns_duplicate_when_quote_fingerprint_already_seen() -
 
 
 @pytest.mark.unit
-def test_classify_mail_returns_quote_when_same_sender_subject_not_in_registry() -> None:
-    message = load_sample_email("sample-012")
+def test_classify_mail_returns_quote_when_same_sender_subject_body_differs() -> None:
+    first = load_sample_email("sample-011")
+    second = load_sample_email("sample-012")
+    seen = {quote_fingerprint(first)}
 
-    assert classify_mail(message, fingerprint=quote_fingerprint(message)) == "quote"
+    assert classify_mail(second, seen_fingerprints=seen, fingerprint=quote_fingerprint(second)) == (
+        "quote"
+    )
+
+
+@pytest.mark.unit
+def test_classify_mail_returns_negotiation_reply_when_body_is_number_only() -> None:
+    message = EmailMessage(
+        id="in-number",
+        from_address="p01@sim.local",
+        to_address="buyer@sim.local",
+        subject="Re: Counter-offer for RFQ-001",
+        sim_time_hours=4.0,
+        attachment_ids=[],
+        body="4,200.00",
+    )
+
+    assert classify_mail(message) == "negotiation_reply"
 
 
 @pytest.mark.unit

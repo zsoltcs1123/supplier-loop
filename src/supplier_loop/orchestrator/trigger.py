@@ -1,5 +1,5 @@
 from supplier_loop.machine.due import due_alarms
-from supplier_loop.orchestrator.relevance import relevant_supplier_ids
+from supplier_loop.relevance import relevant_supplier_ids
 from supplier_loop.round_state.models import RoundState
 
 

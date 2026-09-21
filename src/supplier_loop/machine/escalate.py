@@ -1,6 +1,6 @@
-from supplier_loop.orchestrator.relevance import bom_lines_for_supplier
-from supplier_loop.round_state.models import AsSentQuote, QuoteRecord, RoundState, SupplierFacts
-from supplier_loop.simulator.port import SentEmailRecord, Simulator
+from supplier_loop.machine.discrepancy import missing_lines, quantity_mismatches
+from supplier_loop.round_state.models import AsSentQuote, RoundState, SupplierFacts
+from supplier_loop.simulator.port import Assignment, SentEmailRecord, Simulator
 
 
 def send_pending_escalations(
@@ -16,9 +16,7 @@ def send_pending_escalations(
         revised = _use_revised_marker(supplier, class_num)
         if _escalation_sent(supplier.supplier_id, class_num, sent, approver, revised=revised):
             continue
-        body = _escalation_body(
-            class_num, supplier.quote, state, supplier.supplier_id, revised=revised
-        )
+        body = _escalation_body(class_num, supplier, state, revised=revised)
         subject = f"[REF:{supplier.supplier_id}] class {class_num}"
         email_id = simulator.send_email(approver, subject, body)
         supplier.outbound_ids.append(email_id)
@@ -64,58 +62,86 @@ def _class_marker(class_num: int, *, revised: bool = False) -> str:
 
 def _escalation_body(
     class_num: int,
-    quote: QuoteRecord,
+    supplier: SupplierFacts,
     state: RoundState,
-    supplier_id: str,
     *,
     revised: bool = False,
 ) -> str:
+    quote = supplier.quote
+    if quote is None:
+        return f"{_class_marker(class_num, revised=revised)} discrepancy requires approver review."
     as_sent = quote.revised_as_sent or quote.as_sent
     assignment = state.rfq.assignment
     marker = _class_marker(class_num, revised=revised)
+    specific = _class_specific_claim(class_num, as_sent, state, supplier)
+    if revised:
+        return f"{marker} {specific} {_quote_now_on_file(as_sent, assignment)}"
+    return f"{marker} {specific}"
+
+
+def _class_specific_claim(
+    class_num: int,
+    as_sent: AsSentQuote,
+    state: RoundState,
+    supplier: SupplierFacts,
+) -> str:
+    assignment = state.rfq.assignment
     if class_num == 1:
-        missing = _missing_lines(as_sent, state, supplier_id)
-        return f"{marker} missing BOM line(s): {', '.join(missing)}."
+        return _class_1_claim(as_sent, state, supplier.supplier_id)
     if class_num == 2:
-        mismatches = _quantity_mismatches(as_sent, state, supplier_id)
-        parts = [f"{material_id} quoted {qty:g}" for material_id, qty in mismatches]
-        return f"{marker} quantity mismatch on {', '.join(parts)}."
+        return _class_2_claim(as_sent, state, supplier.supplier_id)
     if class_num == 3:
         return (
-            f"{marker} payment terms {as_sent.payment_terms!r} "
+            f"payment terms {as_sent.payment_terms!r} "
             f"differs from required {assignment.required_payment_terms!r}."
         )
     if class_num == 4:
         return (
-            f"{marker} validity {as_sent.validity_days} days "
+            f"validity {as_sent.validity_days} days "
             f"is shorter than required {assignment.required_validity_days} days."
         )
     if class_num == 6:
-        return f"{marker} negotiation outcome requires approver sign-off."
+        return _class_6_claim(supplier)
     if class_num == 7:
-        return f"{marker} supplier content contains embedded instructions."
-    return f"{marker} discrepancy requires approver review."
+        return "supplier content contains embedded instructions."
+    return "discrepancy requires approver review."
 
 
-def _missing_lines(quote_as_sent: AsSentQuote, state: RoundState, supplier_id: str) -> list[str]:
-    catalog = {line.material_id for line in bom_lines_for_supplier(state, supplier_id)}
-    quoted = {line.material_id for line in quote_as_sent.line_items if line.material_id is not None}
-    return sorted(material_id for material_id in catalog if material_id not in quoted)
+def _class_1_claim(as_sent: AsSentQuote, state: RoundState, supplier_id: str) -> str:
+    missing = missing_lines(as_sent, state, supplier_id)
+    if missing:
+        return f"missing BOM line(s): {', '.join(missing)}."
+    return "required BOM lines are present."
 
 
-def _quantity_mismatches(
-    quote_as_sent: AsSentQuote,
-    state: RoundState,
-    supplier_id: str,
-) -> list[tuple[str, float]]:
-    quote_by_material = {
-        line.material_id: line.quantity
-        for line in quote_as_sent.line_items
-        if line.material_id is not None
-    }
-    mismatches: list[tuple[str, float]] = []
-    for bom_line in bom_lines_for_supplier(state, supplier_id):
-        quoted_qty = quote_by_material.get(bom_line.material_id)
-        if quoted_qty is not None and quoted_qty != bom_line.quantity:
-            mismatches.append((bom_line.material_id, quoted_qty))
-    return mismatches
+def _class_2_claim(as_sent: AsSentQuote, state: RoundState, supplier_id: str) -> str:
+    mismatches = quantity_mismatches(as_sent, state, supplier_id)
+    if mismatches:
+        parts = [f"{material_id} quoted {qty:g}" for material_id, qty in mismatches]
+        return f"quantity mismatch on {', '.join(parts)}."
+    return "quoted quantities match the BOM."
+
+
+def _class_6_claim(supplier: SupplierFacts) -> str:
+    original = supplier.quote.recomputed_grand_total if supplier.quote is not None else 0.0
+    parts = [f"original {original:,.2f}"]
+    if supplier.negotiation_target_total is not None:
+        parts.append(f"counter {supplier.negotiation_target_total:,.2f}")
+    if supplier.negotiation_reply_total is not None:
+        parts.append(f"supplier reply {supplier.negotiation_reply_total:,.2f}")
+    return "negotiation outcome " + ", ".join(parts) + "."
+
+
+def _quote_now_on_file(as_sent: AsSentQuote, assignment: Assignment) -> str:
+    lines = (
+        ", ".join(
+            f"{line.material_id or line.description} qty {line.quantity:g} at {line.unit_price:g}"
+            for line in as_sent.line_items
+        )
+        or "no lines"
+    )
+    return (
+        f"Quote now on file: {lines}; "
+        f"terms {as_sent.payment_terms!r} (required {assignment.required_payment_terms!r}); "
+        f"validity {as_sent.validity_days} days (required {assignment.required_validity_days})."
+    )

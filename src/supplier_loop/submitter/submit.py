@@ -1,5 +1,6 @@
-from supplier_loop.orchestrator.relevance import relevant_supplier_ids
+from supplier_loop.machine.ruling import is_rejection_ruling
 from supplier_loop.quote_pipeline.recompute import recomputed_line_total
+from supplier_loop.relevance import relevant_supplier_ids
 from supplier_loop.round_state.models import RoundState, SupplierFacts
 from supplier_loop.simulator.port import SentEmailRecord, Simulator, SubmitEntry, SubmitLineItem
 
@@ -24,7 +25,7 @@ def derive_auto_approved(
     approver_email: str,
 ) -> bool:
     if _has_escalation_mail(supplier.supplier_id, sent, approver_email):
-        return False
+        return _has_approver_approval(supplier)
     return not supplier.escalation_classes
 
 
@@ -103,6 +104,12 @@ def _supplier_ready_for_submit(supplier: SupplierFacts) -> bool:
     if supplier.reminder_sim_time is not None and supplier.quote is None:
         return True
     return supplier.phase == "escalated" and supplier.quote is not None
+
+
+def _has_approver_approval(supplier: SupplierFacts) -> bool:
+    if not supplier.approver_rulings:
+        return False
+    return not is_rejection_ruling(supplier.approver_rulings[-1])
 
 
 def _has_escalation_mail(
