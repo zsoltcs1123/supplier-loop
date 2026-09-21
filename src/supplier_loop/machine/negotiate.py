@@ -4,7 +4,7 @@ from supplier_loop.quote_pipeline.recompute import recomputed_grand_total, recom
 from supplier_loop.round_state.models import RoundState, SupplierFacts
 from supplier_loop.simulator.port import EmailMessage, Simulator
 
-_AMOUNT = re.compile(r"\d{1,3}(?:,\d{3})*(?:\.\d+)?|\d+(?:\.\d+)?")
+_AMOUNT = re.compile(r"\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?")
 
 
 def negotiate_once(

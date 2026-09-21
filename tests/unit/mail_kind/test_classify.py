@@ -88,6 +88,21 @@ def test_classify_mail_returns_negotiation_reply_when_body_is_number_only() -> N
 
 
 @pytest.mark.unit
+def test_classify_mail_returns_negotiation_reply_when_supplier_meets_the_total() -> None:
+    message = EmailMessage(
+        id="in-meet",
+        from_address="p01@sim.local",
+        to_address="buyer@sim.local",
+        subject="Re: pricing discussion, RFQ RFQ-004",
+        sim_time_hours=5.0,
+        attachment_ids=[],
+        body="We can meet you at 4116.00 total — confirmed. Send the PO whenever you're ready.",
+    )
+
+    assert classify_mail(message) == "negotiation_reply"
+
+
+@pytest.mark.unit
 def test_classify_mail_returns_approver_ruling_when_from_approver() -> None:
     message = load_approver_ruling()
 

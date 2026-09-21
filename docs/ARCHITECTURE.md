@@ -192,7 +192,7 @@ model whether to escalate. The mock extract adapter is how most of the loop is b
 | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | Backup injection heuristic                                                                                        | A live round misses known traps such as exemption language in sample traffic | The scan may set `injection_suspected` only. It does not pick an action from prose. Out of scope for the first milestone |
 | PDF-reader port                                                                                                   | A second reader is actually needed                                           | Then the seam is real. Not before                                                                                        |
-| Silence threshold, quiet margin, poll interval compared with sim clock factor, rejection-cycle cap | Still open in [docs/SEED.md](SEED.md)                                        | Tests bind the values. This file does not pick them                                                                      |
+| Silence threshold, quiet margin, poll interval, rejection-cycle cap                            | Bound in [docs/LOOP_CONTRACT.md](LOOP_CONTRACT.md) and [docs/SEED.md](SEED.md) | The machine holds the numbers. This file does not retune them                         |
 
 ---
 
@@ -200,6 +200,7 @@ model whether to escalate. The mock extract adapter is how most of the loop is b
 
 | Version | Date       | Changes                                                                                                                                                                                                                 |
 | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.7     | 2026-09-21 | Unattended loop waits for an approver ruling before submit. Clock numbers live in the loop contract.                                                                                                                  |
 | 1.6     | 2026-09-21 | Runtime extract model `google/gemini-2.5-pro`.                                                                                                                                                                         |
 | 1.5     | 2026-09-21 | PyMuPDF for PDF text. Runtime extract model `openai/gpt-4o-mini`.                                                                                                                                                      |
 | 1.4     | 2026-09-21 | Drop the why table. Drop stack rationale. Keep the shape and the open items.                                                                                                                                           |

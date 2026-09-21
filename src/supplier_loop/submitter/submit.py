@@ -1,4 +1,7 @@
-from supplier_loop.machine.constants import quiet_margin_seconds
+from supplier_loop.machine.constants import (
+    ESCALATION_SETTLE_SIM_SECONDS,
+    quiet_margin_seconds,
+)
 from supplier_loop.machine.ruling import is_approval_ruling
 from supplier_loop.quote_pipeline.recompute import recomputed_line_total
 from supplier_loop.relevance import relevant_supplier_ids
@@ -77,9 +80,10 @@ def build_submit_payload(state: RoundState, simulator: Simulator) -> dict[str, S
     sent = simulator.list_sent()
     approver_email = state.rfq.assignment.approver_email
     payload: dict[str, SubmitEntry] = {}
+    sim_time = state.rfq.clock.sim_time_seconds
     for supplier_id in sorted(relevant_supplier_ids(state)):
         supplier = state.suppliers[supplier_id]
-        if not _supplier_ready_for_submit(supplier):
+        if not _supplier_ready_for_submit(supplier, sim_time=sim_time):
             continue
         if supplier.quote is None:
             payload[supplier_id] = build_reminded_entry(supplier, sent, approver_email)
@@ -97,7 +101,7 @@ def round_ready_to_submit(state: RoundState) -> bool:
     sim_time = state.rfq.clock.sim_time_seconds
     for supplier_id in relevant:
         supplier = state.suppliers[supplier_id]
-        if not _supplier_ready_for_submit(supplier):
+        if not _supplier_ready_for_submit(supplier, sim_time=sim_time):
             return False
         if supplier.reminder_sim_time is not None and supplier.quote is None:
             any_silent = True
@@ -119,12 +123,18 @@ def _inbox_quiet(state: RoundState, margin: float) -> bool:
     return state.rfq.clock.sim_time_seconds - last_inbound >= margin
 
 
-def _supplier_ready_for_submit(supplier: SupplierFacts) -> bool:
+def _supplier_ready_for_submit(supplier: SupplierFacts, *, sim_time: float) -> bool:
     if supplier.phase == "done" and supplier.quote is not None:
         return True
     if supplier.reminder_sim_time is not None and supplier.quote is None:
         return True
-    return supplier.phase == "escalated" and supplier.quote is not None
+    waited = supplier.escalation_wait_since_sim_seconds
+    return (
+        supplier.phase == "escalated"
+        and supplier.quote is not None
+        and waited is not None
+        and sim_time - waited >= ESCALATION_SETTLE_SIM_SECONDS
+    )
 
 
 def _has_approver_approval(supplier: SupplierFacts) -> bool:

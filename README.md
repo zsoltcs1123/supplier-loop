@@ -4,6 +4,16 @@ Automated supplier-quoting loop for the LeadFlow Automation challenge. The loop 
 
 Python 3.11, managed with [uv](https://github.com/astral-sh/uv).
 
+## Run
+
+One command. Python 3.11. The loop sends the RFQs, polls, and calls `submit_results`. Do not send mail by hand.
+
+```bash
+uv run python -m supplier_loop run-dev
+```
+
+Put credentials in `.env` first (see Setup). The loop contract is [docs/LOOP_CONTRACT.md](docs/LOOP_CONTRACT.md).
+
 ## Setup
 
 ```bash

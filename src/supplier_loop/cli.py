@@ -19,7 +19,7 @@ from supplier_loop.simulator.port import SubmitEntry
 from supplier_loop.simulator.session import McpToolSession, ToolCaller, ToolSession
 
 _POLL_SECONDS = 5.0
-_MAX_PASSES = 2880
+_MAX_PASSES = 5760
 _STATE_ROOT = Path(".artifacts")
 
 

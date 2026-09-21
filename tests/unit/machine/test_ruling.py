@@ -70,6 +70,7 @@ def test_ruling_sends_correction_when_approver_says_not_approving() -> None:
     )
 
     assert state.suppliers["p02"].correction_used is True
+    assert state.suppliers["p02"].phase == "escalated"
     assert len(sent) == 1
     assert sent[0][0] == "declan@emeraldfittings.example"
     assert "quantity" in sent[0][2].casefold()

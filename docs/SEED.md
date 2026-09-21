@@ -236,14 +236,14 @@ Action precedence: `escalated` beats `answered_question` and `reminded`. Those b
 
 Loop contract, code, README, `submit_results` output, `WORKLOG.md`, Cursor transcripts, anneal export, optional self-evaluation.
 
-## Still open
+## Clock policy
 
-The spec does not publish these.
+The machine owns these. [docs/LOOP_CONTRACT.md](LOOP_CONTRACT.md) is the loop constitution.
 
-- Silence reminder threshold. Count in sim-days. A reminder that is too early is scored against you.
-- Inbox-quiet sim-time margin for round-done
-- Poll interval versus sim clock factor
-- Loop iteration cap for approver rejection cycles
+- Reminder: 4 sim-days for inline and pasted-table suppliers. 8 sim-days for PDF and photo suppliers (`p03`, `p04`).
+- Quiet margin after a reminder, and inbox quiet when that supplier never quoted: 2 sim-days, or 3 sim-days for PDF and photo.
+- Poll interval: 5 real seconds.
+- Stop after 5760 polls (8 real hours) if the round is not done. One correction and one negotiation per supplier.
 
 ## Risks
 

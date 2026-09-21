@@ -133,6 +133,17 @@ def test_trigger_skips_pass_when_no_delta_and_no_idle_relevant() -> None:
 
 
 @pytest.mark.unit
+def test_trigger_runs_pass_when_supplier_is_escalated() -> None:
+    state = _state(
+        phases={"p01": "escalated", "p02": "done"},
+        inbox_ids=["in-1"],
+        seen_ids={"in-1"},
+    )
+
+    assert should_run_pass(state) is True
+
+
+@pytest.mark.unit
 def test_trigger_runs_pass_when_quote_has_no_line_items() -> None:
     state = _state(
         phases={"p01": "quoted", "p02": "awaiting_quote"},

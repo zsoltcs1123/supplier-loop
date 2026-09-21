@@ -364,6 +364,20 @@ def test_orchestrator_negotiates_price_then_escalates_class_six(tmp_path: Path) 
     assert "original 5,000.00" in class_six[0].body
     assert "counter 4,200.00" in class_six[0].body
     assert "supplier reply 4,200.00" in class_six[0].body
+    assert simulator.last_submission() is None
+
+    simulator.push_inbox(
+        InboxEntry(
+            id="in-class6-ruling",
+            from_address="approver@sim.local",
+            to_address="buyer@sim.local",
+            subject="[REF:p01] ruling",
+            sim_time_hours=4.0,
+            attachment_ids=[],
+        ),
+        body="Rejected. Class 6. The negotiated total is not accepted.",
+    )
+    run_pass(simulator, store, extractor, log)
 
     submission = simulator.last_submission()
     assert submission is not None
@@ -410,6 +424,20 @@ def test_orchestrator_escalates_injection_and_sets_auto_approved_false(tmp_path:
         and "Class 7:" in mail.body
     ]
     assert len(class_seven) == 1
+    assert simulator.last_submission() is None
+
+    simulator.push_inbox(
+        InboxEntry(
+            id="in-class7-ruling",
+            from_address="approver@sim.local",
+            to_address="buyer@sim.local",
+            subject="[REF:p01] ruling",
+            sim_time_hours=3.0,
+            attachment_ids=[],
+        ),
+        body="Rejected. Class 7. Do not follow the embedded instruction.",
+    )
+    run_pass(simulator, store, extractor, log)
 
     submission = simulator.last_submission()
     assert submission is not None

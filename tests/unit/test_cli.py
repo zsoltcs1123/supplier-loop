@@ -74,7 +74,7 @@ def test_parser_defaults_poll_and_max_passes_when_run_dev() -> None:
     args = build_parser().parse_args(["run-dev"])
 
     assert args.poll_seconds == 5.0
-    assert args.max_passes == 2880
+    assert args.max_passes == 5760
 
 
 @pytest.mark.unit

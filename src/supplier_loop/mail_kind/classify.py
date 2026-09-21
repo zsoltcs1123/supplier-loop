@@ -63,7 +63,7 @@ def _is_negotiation_reply(message: EmailMessage) -> bool:
     if _looks_like_quote(message):
         return False
     blob = f"{message.subject}\n{message.body}".casefold()
-    if "meet in the middle" in blob:
+    if "meet in the middle" in blob or "meet you at" in blob:
         return True
     return _NUMBER_ONLY.match(message.body.strip()) is not None
 

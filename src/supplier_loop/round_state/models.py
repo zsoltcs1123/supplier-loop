@@ -70,6 +70,7 @@ class SupplierFacts(BaseModel):
     negotiation_used: bool = False
     negotiation_target_total: float | None = None
     negotiation_reply_total: float | None = None
+    escalation_wait_since_sim_seconds: float | None = None
     own_quote_history: list[AsSentQuote] = []
 
 

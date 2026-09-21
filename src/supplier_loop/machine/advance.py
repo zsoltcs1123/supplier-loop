@@ -1,6 +1,7 @@
 from supplier_loop.classer.classify import required_classes
+from supplier_loop.machine.constants import NEGOTIATION_REPLY_SIM_DAYS
 from supplier_loop.machine.escalate import send_pending_escalations
-from supplier_loop.machine.negotiate import negotiate_once
+from supplier_loop.machine.negotiate import negotiate_once, record_negotiation_reply
 from supplier_loop.relevance import relevant_supplier_ids
 from supplier_loop.round_state.models import RoundState, SupplierFacts
 from supplier_loop.simulator.port import Simulator
@@ -22,17 +23,34 @@ def advance_suppliers(state: RoundState, simulator: Simulator) -> None:
             classes = _with_last_rejection(supplier)
             sent = simulator.list_sent()
         sendable = [class_num for class_num in _SENDABLE_CLASSES if class_num in classes]
-        waiting_for_reply = (
-            5 in classes and supplier.negotiation_used and not supplier.own_quote_history
-        )
+        waiting_for_reply = _waiting_for_negotiation_reply(supplier, classes)
+        if waiting_for_reply and _negotiation_reply_overdue(supplier, state):
+            record_negotiation_reply(supplier)
+            _apply_classer(supplier, state)
+            classes = _with_last_rejection(supplier)
+            sendable = [class_num for class_num in _SENDABLE_CLASSES if class_num in classes]
+            waiting_for_reply = False
         if sendable:
             send_pending_escalations(supplier, state, simulator, sent)
             sent = simulator.list_sent()
             supplier.phase = "escalated"
+            if supplier.escalation_wait_since_sim_seconds is None:
+                supplier.escalation_wait_since_sim_seconds = state.rfq.clock.sim_time_seconds
         elif waiting_for_reply:
             continue
         elif supplier.phase != "done":
             supplier.phase = "done"
+
+
+def _waiting_for_negotiation_reply(supplier: SupplierFacts, classes: list[int]) -> bool:
+    return 5 in classes and supplier.negotiation_used and not supplier.own_quote_history
+
+
+def _negotiation_reply_overdue(supplier: SupplierFacts, state: RoundState) -> bool:
+    received = supplier.quote_received_sim_days
+    if received is None:
+        return False
+    return state.rfq.clock.sim_time_days - received >= NEGOTIATION_REPLY_SIM_DAYS
 
 
 def mark_quote_received(supplier: SupplierFacts, *, sim_time_days: float) -> None:

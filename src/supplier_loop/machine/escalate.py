@@ -14,7 +14,15 @@ def send_pending_escalations(
     approver = state.rfq.assignment.approver_email
     for class_num in _escalation_classes_to_send(supplier.escalation_classes):
         revised = _use_revised_marker(supplier, class_num)
-        if _escalation_sent(supplier.supplier_id, class_num, sent, approver, revised=revised):
+        snippet = _reply_snippet(supplier, class_num)
+        if _escalation_sent(
+            supplier.supplier_id,
+            class_num,
+            sent,
+            approver,
+            revised=revised,
+            snippet=snippet,
+        ):
             continue
         body = _escalation_body(class_num, supplier, state, revised=revised)
         subject = f"[REF:{supplier.supplier_id}] class {class_num}"
@@ -39,6 +47,12 @@ def _escalation_classes_to_send(classes: list[int]) -> list[int]:
     return ordered
 
 
+def _reply_snippet(supplier: SupplierFacts, class_num: int) -> str | None:
+    if class_num != 6 or supplier.negotiation_reply_total is None:
+        return None
+    return f"supplier reply {supplier.negotiation_reply_total:,.2f}"
+
+
 def _escalation_sent(
     supplier_id: str,
     class_num: int,
@@ -46,11 +60,16 @@ def _escalation_sent(
     approver_email: str,
     *,
     revised: bool = False,
+    snippet: str | None = None,
 ) -> bool:
     ref = f"[REF:{supplier_id}]"
     marker = _class_marker(class_num, revised=revised)
     return any(
-        mail.to == approver_email and ref in mail.subject and marker in mail.body for mail in sent
+        mail.to == approver_email
+        and ref in mail.subject
+        and marker in mail.body
+        and (snippet is None or snippet in mail.body)
+        for mail in sent
     )
 
 

@@ -2,7 +2,7 @@ import re
 
 from supplier_loop.machine.correct import correct_once
 from supplier_loop.machine.negotiate import negotiate_once
-from supplier_loop.round_state.models import RoundState
+from supplier_loop.round_state.models import RoundState, SupplierFacts
 from supplier_loop.simulator.port import EmailMessage, Simulator
 
 _REF_PATTERN = re.compile(r"\[REF:([^\]]+)\]", re.IGNORECASE)
@@ -39,14 +39,31 @@ def handle_approver_ruling(
         return
     supplier = state.suppliers[supplier_id]
     supplier.approver_rulings.append(message.body)
+    if is_approval_ruling(message.body):
+        supplier.phase = "done"
+        return
     if not is_rejection_ruling(message.body):
         return
     class_num = _class_from_ruling(message.body, supplier.escalation_classes)
     if class_num in {1, 2, 3, 4}:
+        if _revision_already_on_file(supplier):
+            supplier.phase = "done"
+            return
         supplier.last_rejection_class = class_num
         correct_once(supplier, state, simulator, class_num)
-    elif class_num == 5:
+        return
+    if class_num == 5:
         negotiate_once(supplier, state, simulator)
+        return
+    supplier.phase = "done"
+
+
+def _revision_already_on_file(supplier: SupplierFacts) -> bool:
+    return (
+        supplier.correction_used
+        and supplier.quote is not None
+        and supplier.quote.revised_as_sent is not None
+    )
 
 
 def _supplier_id_from_subject(subject: str) -> str | None:
