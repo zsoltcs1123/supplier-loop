@@ -20,6 +20,7 @@ from supplier_loop.simulator.port import (
     Assignment,
     BomLine,
     EmailMessage,
+    SentEmailRecord,
     SimClock,
     Simulator,
     SupplierEntry,
@@ -74,6 +75,79 @@ def test_ruling_sends_correction_when_approver_says_not_approving() -> None:
     assert len(sent) == 1
     assert sent[0][0] == "declan@emeraldfittings.example"
     assert "quantity" in sent[0][2].casefold()
+
+
+_NEED_SPECIFICS = (
+    "Hi, I need specifics before I can rule on this — "
+    "tell me exactly what looks wrong with their quote and I'll confirm."
+)
+
+
+@pytest.mark.unit
+def test_ruling_restates_class_six_claim_once_when_approver_asks_for_specifics() -> None:
+    state = _quoted_state()
+    supplier = state.suppliers["p02"]
+    supplier.escalation_classes = [6]
+    supplier.negotiation_target_total = 4116.0
+    supplier.negotiation_reply_total = 4116.0
+    supplier.escalation_wait_since_sim_seconds = 0.0
+    assert supplier.quote is not None
+    supplier.quote.recomputed_grand_total = 3951.60
+    sent: list[tuple[str, str, str]] = []
+    simulator = _recording_simulator(sent)
+    ruling = _specifics_message()
+
+    handle_approver_ruling(ruling, state, simulator)
+    handle_approver_ruling(ruling, state, simulator)
+
+    assert len(sent) == 1
+    assert sent[0][0] == "approver@sim.local"
+    assert sent[0][1] == "[REF:p02] class 6"
+    assert sent[0][2].startswith("Specifics: ")
+    assert "supplier reply 4,116.00" in sent[0][2]
+    assert "differs from original 3,951.60" in sent[0][2]
+    assert "counter 4,116.00" in sent[0][2]
+    assert supplier.phase == "escalated"
+    assert supplier.escalation_wait_since_sim_seconds == 10_000.0
+
+
+@pytest.mark.unit
+def test_ruling_stays_quiet_when_specifics_request_has_no_discrepancy() -> None:
+    state = _quoted_state()
+    state.suppliers["p02"].escalation_classes = [1]
+    sent: list[tuple[str, str, str]] = []
+
+    handle_approver_ruling(_specifics_message(), state, _recording_simulator(sent))
+
+    assert sent == []
+    assert state.suppliers["p02"].phase == "escalated"
+
+
+def _specifics_message() -> EmailMessage:
+    return EmailMessage(
+        id="in-specifics",
+        from_address="approver@sim.local",
+        to_address="buyer@sim.local",
+        subject="[REF:p02] ruling",
+        sim_time_hours=4.0,
+        attachment_ids=[],
+        body=_NEED_SPECIFICS,
+    )
+
+
+def _recording_simulator(sent: list[tuple[str, str, str]]) -> Simulator:
+    class _Sim:
+        def send_email(self, to: str, subject: str, body: str) -> str:
+            sent.append((to, subject, body))
+            return f"out-{len(sent)}"
+
+        def list_sent(self) -> list[SentEmailRecord]:
+            return [
+                SentEmailRecord(id=f"sent-{index}", to=to, subject=subject, body=body)
+                for index, (to, subject, body) in enumerate(sent, start=1)
+            ]
+
+    return cast(Simulator, _Sim())
 
 
 def _quoted_state() -> RoundState:

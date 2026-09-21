@@ -45,7 +45,7 @@ Obtain a quote from every supplier that carries a BOM line, escalate every case 
 2. Ingest. Deterministic. Read new inbox mail through the simulator adapter. Classify mail kind from envelope and body shape.
 3. Extract. Model only when the kind is `quote`. PDF text comes from the text layer in code, then the model. Photos go to the model as images. Runtime model is `google/gemini-2.5-pro` unless `OPENROUTER_MODEL` is set.
 4. Validate. Deterministic. Normalize descriptions to catalog ids, recompute totals, and run the classer.
-5. Decide. Deterministic. The machine acts per supplier: RFQ, reminder, answer, one correction, one negotiation, or escalation. An approval marks the supplier done. A rejection of class 1–4 asks for one correction, then waits. A later rejection, or a rejection of class 6 or 7, marks the supplier done.
+5. Decide. Deterministic. The machine acts per supplier: RFQ, reminder, answer, one correction, one negotiation, or escalation. An approval marks the supplier done. A rejection of class 1–4 asks for one correction, then waits. A later rejection, or a rejection of class 6 or 7, marks the supplier done. A specifics request resends that class claim once.
 6. Act. Deterministic send through the simulator adapter. One new outbound per purpose. Already-sent escalations are not sent again.
 7. Verify. Deterministic. `action_taken` and `auto_approved` are derived from stored facts plus `list_sent`, not from memory and not from the model.
 8. Persist. Round state is rewritten under `.artifacts/round`. The operational log appends to `.artifacts/ops.jsonl`. The log is never replayed as memory.
@@ -56,7 +56,7 @@ Poll every 5 real seconds. The dev clock observed on 2026-09-21 advanced about 7
 
 Submit when every relevant supplier has a quote and is done, or was reminded and never quoted. A reminded PDF or photo supplier waits 3 sim-days after the reminder, and the inbox must be quiet for that same margin. Other reminded suppliers wait 2 sim-days.
 
-Stop after 5760 polls (8 real hours) if that has not happened. One correction and one negotiation per supplier. If a counter-offer has no reply after 1 sim-day, escalate the negotiation anyway. If an escalation has no ruling after 1 sim-day, submit that supplier with `auto_approved` false. The loop does not call `start_exam`.
+Stop after 5760 polls (8 real hours) if that has not happened. One correction and one negotiation per supplier. If a counter-offer has no reply after 1 sim-day, escalate the negotiation anyway. If an escalation is still open 1 sim-day after the last claim, submit that supplier with `auto_approved` false. A specifics resend restarts that wait. The loop does not call `start_exam`.
 
 ## State vs log
 

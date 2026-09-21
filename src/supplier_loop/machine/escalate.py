@@ -2,6 +2,33 @@ from supplier_loop.machine.discrepancy import missing_lines, quantity_mismatches
 from supplier_loop.round_state.models import AsSentQuote, RoundState, SupplierFacts
 from supplier_loop.simulator.port import Assignment, SentEmailRecord, Simulator
 
+_SPECIFICS_PREFIX = "Specifics: "
+_DISCREPANCY_MARKERS = ("differs", "missing", "shorter", "mismatch", "embedded")
+
+
+def resend_concrete_claim(
+    supplier: SupplierFacts,
+    state: RoundState,
+    simulator: Simulator,
+) -> None:
+    if supplier.quote is None:
+        return
+    class_num = _class_to_restate(supplier.escalation_classes)
+    if class_num is None:
+        return
+    revised = _use_revised_marker(supplier, class_num)
+    body = _escalation_body(class_num, supplier, state, revised=revised)
+    if not _names_discrepancy(body):
+        return
+    approver = state.rfq.assignment.approver_email
+    sent = simulator.list_sent()
+    if _restatement_sent(supplier.supplier_id, class_num, sent, approver, revised=revised):
+        return
+    subject = f"[REF:{supplier.supplier_id}] class {class_num}"
+    email_id = simulator.send_email(approver, subject, f"{_SPECIFICS_PREFIX}{body}")
+    supplier.outbound_ids.append(email_id)
+    supplier.escalation_wait_since_sim_seconds = state.rfq.clock.sim_time_seconds
+
 
 def send_pending_escalations(
     supplier: SupplierFacts,
@@ -143,12 +170,49 @@ def _class_2_claim(as_sent: AsSentQuote, state: RoundState, supplier_id: str) ->
 
 def _class_6_claim(supplier: SupplierFacts) -> str:
     original = supplier.quote.recomputed_grand_total if supplier.quote is not None else 0.0
-    parts = [f"original {original:,.2f}"]
-    if supplier.negotiation_target_total is not None:
-        parts.append(f"counter {supplier.negotiation_target_total:,.2f}")
-    if supplier.negotiation_reply_total is not None:
-        parts.append(f"supplier reply {supplier.negotiation_reply_total:,.2f}")
-    return "negotiation outcome " + ", ".join(parts) + "."
+    original_text = f"original {original:,.2f}"
+    reply = supplier.negotiation_reply_total
+    counter = supplier.negotiation_target_total
+    if reply is not None:
+        claim = f"supplier reply {reply:,.2f} differs from {original_text}"
+        if counter is not None:
+            claim += f", counter {counter:,.2f}"
+    elif counter is not None:
+        claim = f"counter {counter:,.2f} differs from {original_text}"
+    else:
+        claim = original_text
+    return f"negotiation outcome {claim}."
+
+
+def _class_to_restate(classes: list[int]) -> int | None:
+    for class_num in (1, 2, 3, 4, 7, 6):
+        if class_num in classes:
+            return class_num
+    return None
+
+
+def _names_discrepancy(body: str) -> bool:
+    folded = body.casefold()
+    return any(marker in folded for marker in _DISCREPANCY_MARKERS)
+
+
+def _restatement_sent(
+    supplier_id: str,
+    class_num: int,
+    sent: list[SentEmailRecord],
+    approver_email: str,
+    *,
+    revised: bool,
+) -> bool:
+    ref = f"[REF:{supplier_id}]"
+    marker = _class_marker(class_num, revised=revised)
+    return any(
+        mail.to == approver_email
+        and ref in mail.subject
+        and mail.body.startswith(_SPECIFICS_PREFIX)
+        and marker in mail.body
+        for mail in sent
+    )
 
 
 def _quote_now_on_file(as_sent: AsSentQuote, assignment: Assignment) -> str:

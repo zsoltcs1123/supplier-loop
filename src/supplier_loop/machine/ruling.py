@@ -1,6 +1,7 @@
 import re
 
 from supplier_loop.machine.correct import correct_once
+from supplier_loop.machine.escalate import resend_concrete_claim
 from supplier_loop.machine.negotiate import negotiate_once
 from supplier_loop.round_state.models import RoundState, SupplierFacts
 from supplier_loop.simulator.port import EmailMessage, Simulator
@@ -9,6 +10,7 @@ _REF_PATTERN = re.compile(r"\[REF:([^\]]+)\]", re.IGNORECASE)
 _REJECTION_PATTERN = re.compile(r"\breject|\bdisapprov", re.IGNORECASE)
 _APPROVAL_PATTERN = re.compile(r"\bapprov", re.IGNORECASE)
 _NEGATION_PATTERN = re.compile(r"\b(?:not|no|never|cannot|cant)\b|n't\b", re.IGNORECASE)
+_SPECIFICS_PATTERN = re.compile(r"need specifics|what looks wrong", re.IGNORECASE)
 
 
 def is_rejection_ruling(body: str) -> bool:
@@ -19,6 +21,10 @@ def is_rejection_ruling(body: str) -> bool:
 
 def is_approval_ruling(body: str) -> bool:
     return _APPROVAL_PATTERN.search(body) is not None and not is_rejection_ruling(body)
+
+
+def is_specifics_request(body: str) -> bool:
+    return _SPECIFICS_PATTERN.search(body) is not None
 
 
 def _has_negated_approval(body: str) -> bool:
@@ -41,6 +47,9 @@ def handle_approver_ruling(
     supplier.approver_rulings.append(message.body)
     if is_approval_ruling(message.body):
         supplier.phase = "done"
+        return
+    if is_specifics_request(message.body):
+        resend_concrete_claim(supplier, state, simulator)
         return
     if not is_rejection_ruling(message.body):
         return

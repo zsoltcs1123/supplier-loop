@@ -50,6 +50,12 @@ def test_recomputed_line_total_uses_qty_times_unit_price_when_printed_total_wron
 
 
 @pytest.mark.unit
+def test_recomputed_line_total_rounds_binary_product_to_cents() -> None:
+    assert recomputed_line_total(200.0, 1.16) == 232.0
+    assert recomputed_grand_total([recomputed_line_total(200.0, 1.16)]) == 232.0
+
+
+@pytest.mark.unit
 def test_recomputed_grand_total_sums_line_totals_when_printed_grand_total_wrong() -> None:
     assert recomputed_grand_total([2114.5, 123.2]) == 2237.7
 
