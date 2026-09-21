@@ -1,4 +1,3 @@
-import io
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -8,10 +7,11 @@ from supplier_loop.operational_log.log import LogEvent, OperationalLog
 
 
 @pytest.mark.integration
-def test_log_append_writes_jsonl_without_printing_stdout(tmp_path: Path) -> None:
+def test_log_append_writes_jsonl_without_printing_stdout(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     path = tmp_path / "logs" / "operational.jsonl"
     log = OperationalLog(path)
-    stream = io.StringIO()
 
     log.append(
         LogEvent(
@@ -31,6 +31,8 @@ def test_log_append_writes_jsonl_without_printing_stdout(tmp_path: Path) -> None
     )
 
     lines = path.read_text(encoding="utf-8").splitlines()
+    captured = capsys.readouterr()
     assert len(lines) == 2
     assert "watermark \u2014" in lines[1]
-    assert stream.getvalue() == ""
+    assert captured.out == ""
+    assert captured.err == ""
