@@ -43,6 +43,7 @@ def process_inbound_mail(
         return kind
     extracted = extractor.extract(_extract_request(message, attachments))
     supplier.quote = build_quote_record(extracted, rfq)
+    supplier.injection_suspected = extracted.injection_suspected
     dedup.quote_fingerprints.add(fingerprint)
     return kind
 

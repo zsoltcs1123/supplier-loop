@@ -113,6 +113,15 @@ class SubmitEcho(BaseModel):
     warnings: list[str]
 
 
+class SentEmailRecord(BaseModel):
+    model_config = _MODEL_CONFIG
+
+    id: str
+    to: str
+    subject: str
+    body: str
+
+
 class Simulator(Protocol):
     def get_assignment(self) -> Assignment: ...
 
@@ -129,5 +138,7 @@ class Simulator(Protocol):
     def get_sim_clock(self) -> SimClock: ...
 
     def send_email(self, to: str, subject: str, body: str) -> str: ...
+
+    def list_sent(self) -> list[SentEmailRecord]: ...
 
     def submit_results(self, results: dict[str, SubmitEntry]) -> SubmitEcho: ...

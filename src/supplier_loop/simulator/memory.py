@@ -6,6 +6,7 @@ from supplier_loop.simulator.port import (
     EmailMessage,
     InboxEntry,
     PriceHistoryRow,
+    SentEmailRecord,
     SimClock,
     SubmitEcho,
     SubmitEntry,
@@ -88,6 +89,12 @@ class InMemorySimulator:
         self._next_sent_id += 1
         self._sent.append(SentEmail(id=email_id, to=to, subject=subject, body=body))
         return email_id
+
+    def list_sent(self) -> list[SentEmailRecord]:
+        return [
+            SentEmailRecord(id=email.id, to=email.to, subject=email.subject, body=email.body)
+            for email in self._sent
+        ]
 
     def submit_results(self, results: dict[str, SubmitEntry]) -> SubmitEcho:
         self._last_submission = _copy_submit_results(results)

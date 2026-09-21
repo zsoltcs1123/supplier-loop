@@ -63,6 +63,7 @@ class SupplierFacts(BaseModel):
     correction_used: bool = False
     reminder_sim_time: float | None = None
     question_answered: bool = False
+    injection_suspected: bool = False
     own_quote_history: list[AsSentQuote] = []
 
 
