@@ -11,13 +11,12 @@ from supplier_loop.machine.remind import send_due_reminders
 from supplier_loop.machine.ruling import handle_approver_ruling
 from supplier_loop.mail_kind.classify import classify_mail
 from supplier_loop.operational_log.log import LogEvent, OperationalLog
-from supplier_loop.orchestrator.relevance import supplier_for_address
 from supplier_loop.orchestrator.trigger import should_run_pass
 from supplier_loop.progress import emit_progress
 from supplier_loop.quote_pipeline.pipeline import process_inbound_mail
+from supplier_loop.relevance import supplier_for_address
 from supplier_loop.round_state.models import RoundState
 from supplier_loop.round_state.store import RoundStore
-from supplier_loop.simulator.memory import InMemorySimulator
 from supplier_loop.simulator.port import Simulator, SubmitEntry
 from supplier_loop.submitter.submit import build_submit_payload, round_ready_to_submit
 
@@ -78,9 +77,7 @@ def run_until_submit(
 ) -> dict[str, SubmitEntry]:
     for _ in range(max_passes):
         if run_pass(simulator, store, extractor, log, progress=progress):
-            submission = _last_submission(simulator)
-            if submission is not None:
-                return submission
+            return build_submit_payload(store.load(), simulator)
     raise RuntimeError("submit_results was not reached")
 
 
@@ -115,7 +112,7 @@ def _ingest_inbox(
             elif kind == "question":
                 answer_question(supplier, state, simulator, message)
             elif kind == "negotiation_reply":
-                record_negotiation_reply(supplier)
+                record_negotiation_reply(supplier, message)
             elif kind == "duplicate":
                 pass
         elif message.from_address.casefold() == state.rfq.assignment.approver_email.casefold():
@@ -138,9 +135,3 @@ def _ingest_inbox(
                 kind="ingest",
                 subject=f"{entry.id} {kind}",
             )
-
-
-def _last_submission(simulator: Simulator) -> dict[str, SubmitEntry] | None:
-    if isinstance(simulator, InMemorySimulator):
-        return simulator.last_submission()
-    return None

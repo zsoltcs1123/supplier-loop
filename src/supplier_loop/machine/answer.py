@@ -1,4 +1,4 @@
-from supplier_loop.orchestrator.relevance import bom_lines_for_supplier
+from supplier_loop.relevance import bom_lines_for_supplier
 from supplier_loop.round_state.models import RoundState, SupplierFacts
 from supplier_loop.simulator.port import EmailMessage, Simulator
 

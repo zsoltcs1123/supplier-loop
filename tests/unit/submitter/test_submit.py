@@ -48,6 +48,22 @@ def test_submitter_derives_extract_when_no_stronger_action() -> None:
 
 
 @pytest.mark.unit
+def test_submitter_derives_answered_question_when_question_was_answered() -> None:
+    supplier = _supplier()
+    supplier.question_answered = True
+
+    assert derive_action_taken(supplier, [], "approver@sim.local") == "answered_question"
+
+
+@pytest.mark.unit
+def test_submitter_derives_reminded_when_reminder_was_sent() -> None:
+    supplier = _supplier()
+    supplier.reminder_sim_time = 90_000.0
+
+    assert derive_action_taken(supplier, [], "approver@sim.local") == "reminded"
+
+
+@pytest.mark.unit
 def test_submitter_derives_escalated_when_ref_mail_sent() -> None:
     sent = [
         SentEmailRecord(
@@ -71,6 +87,37 @@ def test_submitter_auto_approved_false_when_escalation_classes_present() -> None
     assert (
         derive_auto_approved(_supplier(escalation_classes=[5]), [], "approver@sim.local") is False
     )
+
+
+@pytest.mark.unit
+def test_submitter_auto_approved_false_when_escalation_mail_without_approval() -> None:
+    sent = [
+        SentEmailRecord(
+            id="sent-1",
+            to="approver@sim.local",
+            subject="[REF:p01] class 1",
+            body="Class 1: missing BOM line(s): STL-BEAM-200.",
+        )
+    ]
+    supplier = _supplier(escalation_classes=[1])
+
+    assert derive_auto_approved(supplier, sent, "approver@sim.local") is False
+
+
+@pytest.mark.unit
+def test_submitter_auto_approved_true_when_approver_approved_after_escalation() -> None:
+    sent = [
+        SentEmailRecord(
+            id="sent-1",
+            to="approver@sim.local",
+            subject="[REF:p01] class 1",
+            body="Class 1: missing BOM line(s): STL-BEAM-200.",
+        )
+    ]
+    supplier = _supplier(escalation_classes=[1])
+    supplier.approver_rulings = ["Approved. Class 1 looks fine now."]
+
+    assert derive_auto_approved(supplier, sent, "approver@sim.local") is True
 
 
 @pytest.mark.unit

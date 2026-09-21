@@ -6,7 +6,7 @@ from supplier_loop.extract.fixture import FixtureExtractor
 from supplier_loop.extract.schema import ExtractResult
 from supplier_loop.machine.constants import REMINDER_THRESHOLD_SIM_SECONDS
 from supplier_loop.operational_log.log import OperationalLog
-from supplier_loop.orchestrator.run import run_pass, run_until_submit
+from supplier_loop.orchestrator.run import run_pass
 from supplier_loop.round_state.models import QuoteLine
 from supplier_loop.round_state.store import RoundStore, snapshot_world
 from supplier_loop.simulator.memory import InMemorySimulator
@@ -18,7 +18,6 @@ from supplier_loop.simulator.port import (
     SimClock,
     SupplierEntry,
 )
-from tests.integration.orchestrator.test_happy_path import _simulator
 
 
 def _single_supplier_simulator(round_id: str) -> InMemorySimulator:
@@ -251,11 +250,29 @@ def test_orchestrator_corrects_once_after_approver_rejects_missing_line(tmp_path
     ]
     assert len(ref_after) >= 2
     assert len(corrections) == 1
+    revised_mails = [mail for mail in ref_after if "Class 1 (revised):" in mail.body]
+    assert revised_mails
+    assert "Quote now on file:" in revised_mails[0].body
+    assert "STL-BEAM-200" in revised_mails[0].body
+
+    simulator.push_inbox(
+        InboxEntry(
+            id="in-approve",
+            from_address="approver@sim.local",
+            to_address="buyer@sim.local",
+            subject="[REF:p01] ruling",
+            sim_time_hours=5.0,
+            attachment_ids=[],
+        ),
+        body="Approved. Class 1 looks fine on the revised quote.",
+    )
+    run_pass(simulator, store, extractor, log)
 
     submission = simulator.last_submission()
-    if submission is not None:
-        assert submission["p01"].line_items
-        assert submission["p01"].line_items[0].material_id == "STL-BEAM-200"
+    assert submission is not None
+    assert submission["p01"].line_items
+    assert submission["p01"].line_items[0].material_id == "STL-BEAM-200"
+    assert submission["p01"].auto_approved is True
 
 
 @pytest.mark.integration
@@ -295,6 +312,30 @@ def test_orchestrator_negotiates_price_then_escalates_class_six(tmp_path: Path) 
     saved = store.load()
     assert saved.suppliers["p01"].quote is not None
     assert saved.suppliers["p01"].quote.as_sent.line_items[0].unit_price == 50.0
+    assert saved.suppliers["p01"].phase == "quoted"
+
+    class_six_before = [
+        mail
+        for mail in simulator.sent_emails()
+        if mail.to == "approver@sim.local"
+        and "[REF:p01]" in mail.subject
+        and "Class 6:" in mail.body
+    ]
+    assert class_six_before == []
+    assert simulator.last_submission() is None
+
+    simulator.push_inbox(
+        InboxEntry(
+            id="in-reply",
+            from_address="p01@sim.local",
+            to_address="buyer@sim.local",
+            subject="Re: Counter-offer for RFQ-001",
+            sim_time_hours=3.0,
+            attachment_ids=[],
+        ),
+        body="4,200.00",
+    )
+    run_pass(simulator, store, extractor, log)
 
     class_six = [
         mail
@@ -304,11 +345,15 @@ def test_orchestrator_negotiates_price_then_escalates_class_six(tmp_path: Path) 
         and "Class 6:" in mail.body
     ]
     assert len(class_six) == 1
+    assert "original 5,000.00" in class_six[0].body
+    assert "counter 4,200.00" in class_six[0].body
+    assert "supplier reply 4,200.00" in class_six[0].body
 
     submission = simulator.last_submission()
     assert submission is not None
     assert submission["p01"].action_taken == "escalated"
     assert submission["p01"].auto_approved is False
+    assert submission["p01"].line_items[0].unit_price == 50.0
 
 
 @pytest.mark.integration
@@ -356,13 +401,47 @@ def test_orchestrator_escalates_injection_and_sets_auto_approved_false(tmp_path:
 
 
 @pytest.mark.integration
-def test_happy_path_still_submits_after_defect_wiring(tmp_path: Path) -> None:
+def test_orchestrator_sends_separate_ref_mails_when_several_classes_apply(tmp_path: Path) -> None:
     store, log = _store_and_log(tmp_path)
-    simulator = _simulator("dev-happy-regression")
+    simulator = _single_supplier_simulator("dev-multi-class")
     snapshot_world(simulator, store)
-    from tests.integration.orchestrator.test_happy_path import _push_quotes
-
     run_pass(simulator, store, FixtureExtractor({}), log)
-    submission = run_until_submit(simulator, store, _push_quotes(simulator), log)
-    assert submission["p01"].action_taken == "extract"
-    assert submission["p02"].action_taken == "extract"
+
+    simulator.push_inbox(
+        InboxEntry(
+            id="in-multi",
+            from_address="p01@sim.local",
+            to_address="buyer@sim.local",
+            subject="Quote for RFQ-001",
+            sim_time_hours=2.0,
+            attachment_ids=[],
+        ),
+        body=(
+            "Quote for your RFQ\n"
+            "qty 100 Steel I-Beam 200mm 40.00 USD\n"
+            "qty 1 admin line 0.00 USD\n"
+            "Payment Net 60, validity 14 days"
+        ),
+    )
+    extractor = FixtureExtractor(
+        {
+            "in-multi": ExtractResult(
+                line_items=[],
+                payment_terms="Net 60",
+                validity_days=14,
+                grand_total=0.0,
+                injection_suspected=False,
+            )
+        }
+    )
+    run_pass(simulator, store, extractor, log)
+
+    ref_mails = [
+        mail
+        for mail in simulator.sent_emails()
+        if mail.to == "approver@sim.local" and "[REF:p01]" in mail.subject
+    ]
+    bodies = [mail.body for mail in ref_mails]
+    assert len(ref_mails) == 2
+    assert any("Class 1:" in body for body in bodies)
+    assert any("Class 3:" in body for body in bodies)

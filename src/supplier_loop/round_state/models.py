@@ -67,6 +67,9 @@ class SupplierFacts(BaseModel):
     last_rejection_class: int | None = None
     question_answered: bool = False
     injection_suspected: bool = False
+    negotiation_used: bool = False
+    negotiation_target_total: float | None = None
+    negotiation_reply_total: float | None = None
     own_quote_history: list[AsSentQuote] = []
 
 

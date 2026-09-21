@@ -20,6 +20,12 @@ _ITEM_TIMES = re.compile(r"\d+(?:[.,]\d+)?\s*[x×]\s*\d+(?:[.,]\d+)?")
 _ITEM_CURRENCY = re.compile(r"(?:USD|\$)\s*\d|(?:\d+(?:[.,]\d+)?\s*USD)", re.IGNORECASE)
 _ITEM_THREE_NUMS = re.compile(r"\d+(?:[.,]\d+)?(?:(?:[|\t;]| {2,})\s*\d+(?:[.,]\d+)?){2,}")
 _NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
+_NUMBER_ONLY = re.compile(
+    r"^[\s]*(?:USD|EUR|GBP|\$|€|£)?\s*"
+    r"(?:\d{1,3}(?:,\d{3})*|\d+)(?:[.,]\d+)?\s*"
+    r"(?:USD|EUR|GBP|\$|€|£)?[\s]*$",
+    re.IGNORECASE,
+)
 
 
 def classify_mail(
@@ -57,7 +63,9 @@ def _is_negotiation_reply(message: EmailMessage) -> bool:
     if _looks_like_quote(message):
         return False
     blob = f"{message.subject}\n{message.body}".casefold()
-    return "meet in the middle" in blob
+    if "meet in the middle" in blob:
+        return True
+    return _NUMBER_ONLY.match(message.body.strip()) is not None
 
 
 def _looks_like_quote(message: EmailMessage) -> bool:

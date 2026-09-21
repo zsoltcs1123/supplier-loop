@@ -178,6 +178,9 @@ def test_orchestrator_submits_clean_quotes_when_all_relevant_suppliers_reply(
     snapshot_world(simulator, store)
 
     assert run_pass(simulator, store, FixtureExtractor({}), log) is False
+    saved = store.load()
+    assert saved.suppliers["p01"].phase == "rfq_sent"
+    assert saved.suppliers["p02"].phase == "rfq_sent"
 
     rfq_recipients = {mail.to for mail in simulator.sent_emails()}
     assert rfq_recipients == {"p01@sim.local", "p02@sim.local"}
