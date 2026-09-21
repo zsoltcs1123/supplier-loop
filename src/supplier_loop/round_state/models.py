@@ -62,6 +62,9 @@ class SupplierFacts(BaseModel):
     approver_rulings: list[str] = []
     correction_used: bool = False
     reminder_sim_time: float | None = None
+    awaiting_since_sim_time: float | None = None
+    quote_received_sim_days: float | None = None
+    last_rejection_class: int | None = None
     question_answered: bool = False
     injection_suspected: bool = False
     own_quote_history: list[AsSentQuote] = []
