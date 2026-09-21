@@ -62,8 +62,7 @@ They are not part of a poll pass. The orchestrator does not own due checks. The 
 **2. Simulator adapter.** The simulator adapter is the only code that calls MCP. Business logic reads adapter results, never the wire. Two adapters sit at this seam: the MCP client at runtime, and an
 in-memory adapter in tests. Act and verify run against the in-memory adapter.
 
-**3. Mail kind classifier.** The classifier is deterministic. It classifies inbound mail from envelope and body shape. The kinds are quote, question, negotiation reply, duplicate, and approver ruling.
-Only the kind `quote` uses the extract port. Dedup fingerprints do not live here.
+**3. Mail kind classifier.** The classifier is deterministic. It uses the supplier wait together with envelope and body shape. A first quote is open until a quote with lines is stored. A revision is open after the one correction request, until the revised document is stored. A negotiation reply is open after the counter-offer, until that reply is stored: any inbound mail without a price table is that reply. The kinds are quote, question, negotiation reply, duplicate, approver ruling, and unknown. Unknown sends nothing and leaves the phase unchanged. Only the kind `quote` uses the extract port. Dedup fingerprints do not live here.
 
 **4. Extract port.** The extract port is a thin interface with two adapters. Tests use a fixture mock. Runtime extract uses OpenRouter HTTP. Cursor is the editor, not a runtime adapter. The schema is
 quote fields plus `injection_suspected`. Extra fields are forbidden. `action_taken` and `auto_approved` are not in the schema on either adapter.
@@ -200,6 +199,7 @@ model whether to escalate. The mock extract adapter is how most of the loop is b
 
 | Version | Date       | Changes                                                                                                                                                                                                                 |
 | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.8     | 2026-09-21 | Mail kind follows the supplier wait. Unknown mail is left in place.                                                                                                                                                    |
 | 1.7     | 2026-09-21 | Unattended loop waits for an approver ruling before submit. Clock numbers live in the loop contract.                                                                                                                  |
 | 1.6     | 2026-09-21 | Runtime extract model `google/gemini-2.5-pro`.                                                                                                                                                                         |
 | 1.5     | 2026-09-21 | PyMuPDF for PDF text. Runtime extract model `openai/gpt-4o-mini`.                                                                                                                                                      |

@@ -42,7 +42,7 @@ Obtain a quote from every supplier that carries a BOM line, escalate every case 
 ## 3. SOP — one iteration
 
 1. Trigger. Deterministic. Run a pass when the inbox has a new id, a relevant supplier is still idle, a quote was stored with no lines, or the machine raises `reminder_due`, `validity_alarm`, or `round_done`. Otherwise return.
-2. Ingest. Deterministic. Read new inbox mail through the simulator adapter. Classify mail kind from envelope and body shape.
+2. Ingest. Deterministic. Read new inbox mail through the simulator adapter. Classify mail kind from the supplier wait and from envelope and body shape. Unknown mail sends nothing and leaves the phase unchanged.
 3. Extract. Model only when the kind is `quote`. PDF text comes from the text layer in code, then the model. Photos go to the model as images. Runtime model is `google/gemini-2.5-pro` unless `OPENROUTER_MODEL` is set.
 4. Validate. Deterministic. Normalize descriptions to catalog ids, recompute totals, and run the classer.
 5. Decide. Deterministic. The machine acts per supplier: RFQ, reminder, answer, one correction, one negotiation, or escalation. An approval marks the supplier done. A rejection of class 1–4 asks for one correction, then waits. A later rejection, or a rejection of class 6 or 7, marks the supplier done. A specifics request resends that class claim once.

@@ -10,6 +10,8 @@ from tests.unit.sample_traffic import (
     sample_email_paths,
 )
 
+_NEGOTIATION_SAMPLE_IDS = frozenset({"sample-004", "sample-018"})
+
 _KIND_BY_ID: dict[str, MailKind] = {
     "sample-001": "quote",
     "sample-002": "quote",
@@ -45,7 +47,7 @@ def test_classify_mail_returns_expected_kind_when_sample_traffic_loaded(
 ) -> None:
     message = load_sample_email(email_id)
 
-    assert classify_mail(message) == kind
+    assert classify_mail(message, negotiation_open=email_id in _NEGOTIATION_SAMPLE_IDS) == kind
 
 
 @pytest.mark.unit
@@ -104,7 +106,22 @@ def test_classify_mail_returns_negotiation_reply_when_body_is_number_only() -> N
         body="4,200.00",
     )
 
-    assert classify_mail(message) == "negotiation_reply"
+    assert classify_mail(message, negotiation_open=True) == "negotiation_reply"
+
+
+@pytest.mark.unit
+def test_classify_mail_returns_unknown_when_number_arrives_before_counter_offer() -> None:
+    message = EmailMessage(
+        id="in-number",
+        from_address="p01@sim.local",
+        to_address="buyer@sim.local",
+        subject="Re: Counter-offer for RFQ-001",
+        sim_time_hours=4.0,
+        attachment_ids=[],
+        body="4,200.00",
+    )
+
+    assert classify_mail(message) == "unknown"
 
 
 @pytest.mark.unit
@@ -119,7 +136,81 @@ def test_classify_mail_returns_negotiation_reply_when_supplier_meets_the_total()
         body="We can meet you at 4116.00 total — confirmed. Send the PO whenever you're ready.",
     )
 
-    assert classify_mail(message) == "negotiation_reply"
+    assert classify_mail(message, negotiation_open=True) == "negotiation_reply"
+
+
+@pytest.mark.unit
+def test_classify_mail_returns_unknown_when_acceptance_arrives_before_counter_offer() -> None:
+    message = EmailMessage(
+        id="in-meet",
+        from_address="p01@sim.local",
+        to_address="buyer@sim.local",
+        subject="Re: pricing discussion, RFQ RFQ-004",
+        sim_time_hours=5.0,
+        attachment_ids=[],
+        body="We can meet you at 4116.00 total — confirmed. Send the PO whenever you're ready.",
+    )
+
+    assert classify_mail(message) == "unknown"
+
+
+@pytest.mark.unit
+def test_classify_mail_returns_negotiation_reply_when_waiting_and_phrasing_is_unseen() -> None:
+    message = EmailMessage(
+        id="in-accept",
+        from_address="p01@sim.local",
+        to_address="buyer@sim.local",
+        subject="Re: Counter-offer for RFQ-001",
+        sim_time_hours=6.0,
+        attachment_ids=[],
+        body="Accepted. Book it on our side.",
+    )
+
+    assert classify_mail(message, negotiation_open=True) == "negotiation_reply"
+
+
+@pytest.mark.unit
+def test_classify_mail_returns_unknown_when_body_is_neither_quote_nor_question() -> None:
+    message = EmailMessage(
+        id="in-chatter",
+        from_address="p01@sim.local",
+        to_address="buyer@sim.local",
+        subject="Re: RFQ RFQ-001",
+        sim_time_hours=2.0,
+        attachment_ids=[],
+        body="Thanks, I am out of the office until Thursday.",
+    )
+
+    assert classify_mail(message) == "unknown"
+
+
+@pytest.mark.unit
+def test_classify_mail_returns_unknown_when_quote_is_not_expected() -> None:
+    message = load_sample_email("sample-001")
+
+    assert classify_mail(message, quote_open=False) == "unknown"
+
+
+@pytest.mark.unit
+def test_classify_mail_returns_quote_when_attachment_has_no_quote_word() -> None:
+    message = EmailMessage(
+        id="in-photo",
+        from_address="p04@sim.local",
+        to_address="buyer@sim.local",
+        subject="Re: RFQ-001",
+        sim_time_hours=8.0,
+        attachment_ids=["shot.png"],
+        body="Photo from the yard.",
+    )
+
+    assert classify_mail(message) == "quote"
+
+
+@pytest.mark.unit
+def test_classify_mail_returns_quote_when_revision_is_open() -> None:
+    message = load_sample_email("sample-001")
+
+    assert classify_mail(message, quote_open=False, revision_open=True) == "quote"
 
 
 @pytest.mark.unit

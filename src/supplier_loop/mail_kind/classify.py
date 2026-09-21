@@ -10,11 +10,11 @@ MailKind = Literal[
     "negotiation_reply",
     "duplicate",
     "approver_ruling",
+    "unknown",
 ]
 
 APPROVER_ADDRESS = "approver@sim.local"
 
-_QUOTE_WORD = re.compile(r"\b(?:quote|quotation|offer|pricing)\b", re.IGNORECASE)
 _ITEM_QTY = re.compile(r"\bqty\s+\d+", re.IGNORECASE)
 _ITEM_TIMES = re.compile(r"\d+(?:[.,]\d+)?\s*[x×]\s*\d+(?:[.,]\d+)?")
 _ITEM_X_TOTAL = re.compile(
@@ -24,12 +24,6 @@ _ITEM_X_TOTAL = re.compile(
 _ITEM_CURRENCY = re.compile(r"(?:USD|\$)\s*\d|(?:\d+(?:[.,]\d+)?\s*USD)", re.IGNORECASE)
 _ITEM_THREE_NUMS = re.compile(r"\d+(?:[.,]\d+)?(?:(?:[|\t;]| {2,})\s*\d+(?:[.,]\d+)?){2,}")
 _NUMBER = re.compile(r"\d+(?:[.,]\d+)?")
-_NUMBER_ONLY = re.compile(
-    r"^[\s]*(?:USD|EUR|GBP|\$|€|£)?\s*"
-    r"(?:\d{1,3}(?:,\d{3})*|\d+)(?:[.,]\d+)?\s*"
-    r"(?:USD|EUR|GBP|\$|€|£)?[\s]*$",
-    re.IGNORECASE,
-)
 
 
 def classify_mail(
@@ -37,22 +31,37 @@ def classify_mail(
     *,
     seen_fingerprints: Set[str] = frozenset(),
     fingerprint: str | None = None,
+    quote_open: bool = True,
+    negotiation_open: bool = False,
+    revision_open: bool = False,
 ) -> MailKind:
     if _is_approver_ruling(message):
         return "approver_ruling"
+    if _is_duplicate(message, seen_fingerprints, fingerprint):
+        return "duplicate"
+    if revision_open and _looks_like_quote(message):
+        return "quote"
+    if negotiation_open and not _has_price_table(message.body):
+        return "negotiation_reply"
+    if quote_open and _looks_like_quote(message):
+        return "quote"
     if _is_question(message):
         return "question"
-    if _is_negotiation_reply(message):
-        return "negotiation_reply"
-    if not _looks_like_quote(message):
-        return "question"
-    if fingerprint is not None and fingerprint in seen_fingerprints:
-        return "duplicate"
-    return "quote"
+    return "unknown"
 
 
 def _is_approver_ruling(message: EmailMessage) -> bool:
     return message.from_address.casefold() == APPROVER_ADDRESS
+
+
+def _is_duplicate(
+    message: EmailMessage,
+    seen_fingerprints: Set[str],
+    fingerprint: str | None,
+) -> bool:
+    if fingerprint is None or fingerprint not in seen_fingerprints:
+        return False
+    return _looks_like_quote(message)
 
 
 def _is_question(message: EmailMessage) -> bool:
@@ -63,24 +72,8 @@ def _is_question(message: EmailMessage) -> bool:
     return "?" in message.body
 
 
-def _is_negotiation_reply(message: EmailMessage) -> bool:
-    if _looks_like_quote(message):
-        return False
-    blob = f"{message.subject}\n{message.body}".casefold()
-    if "meet in the middle" in blob or "meet you at" in blob:
-        return True
-    return _NUMBER_ONLY.match(message.body.strip()) is not None
-
-
 def _looks_like_quote(message: EmailMessage) -> bool:
-    return _has_price_table(message.body) or _has_quote_attachment(message)
-
-
-def _has_quote_attachment(message: EmailMessage) -> bool:
-    if not message.attachment_ids:
-        return False
-    blob = f"{message.subject}\n{message.body}"
-    return _QUOTE_WORD.search(blob) is not None
+    return _has_price_table(message.body) or bool(message.attachment_ids)
 
 
 def _has_price_table(body: str) -> bool:

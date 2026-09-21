@@ -142,6 +142,7 @@ def test_process_inbound_mail_does_not_call_extract_when_negotiation_reply() -> 
     extractor = FixtureExtractor({message.id: _extract_result()})
     supplier = _supplier()
     supplier.quote = _quote_record()
+    supplier.negotiation_used = True
     before = [line.model_copy(deep=True) for line in supplier.quote.as_sent.line_items]
     dedup = DedupRegistry()
 
@@ -166,6 +167,7 @@ def test_process_inbound_mail_leaves_as_sent_line_items_when_negotiation_reply()
     supplier = _supplier(email="fatima.alsayed@alsayedtrading.example")
     original = _quote_record()
     supplier.quote = original
+    supplier.negotiation_used = True
     dedup = DedupRegistry()
 
     process_inbound_mail(
@@ -249,6 +251,7 @@ def test_process_inbound_mail_does_not_call_extract_when_number_only_reply() -> 
     extractor = FixtureExtractor({message.id: _extract_result()})
     supplier = _supplier()
     supplier.quote = _quote_record()
+    supplier.negotiation_used = True
     before = [line.model_copy(deep=True) for line in supplier.quote.as_sent.line_items]
 
     kind = process_inbound_mail(
@@ -308,3 +311,106 @@ def test_process_inbound_mail_keeps_photo_bytes_for_vision() -> None:
     )
 
     assert extractor.requests[0].attachments == [attachment]
+
+
+@pytest.mark.unit
+def test_process_inbound_mail_does_not_extract_when_mail_is_unknown() -> None:
+    message = EmailMessage(
+        id="in-chatter",
+        from_address="p01@sim.local",
+        to_address="buyer@sim.local",
+        subject="Re: RFQ RFQ-001",
+        sim_time_hours=2.0,
+        attachment_ids=[],
+        body="Thanks, I am out of the office until Thursday.",
+    )
+    extractor = FixtureExtractor({message.id: _extract_result()})
+    supplier = _supplier()
+
+    kind = process_inbound_mail(
+        message,
+        supplier=supplier,
+        rfq=_rfq(),
+        dedup=DedupRegistry(),
+        extractor=extractor,
+    )
+
+    assert kind == "unknown"
+    assert extractor.requests == []
+    assert supplier.quote is None
+    assert supplier.phase == "idle"
+
+
+@pytest.mark.unit
+def test_process_inbound_mail_keeps_stored_quote_when_a_later_document_arrives() -> None:
+    first = load_sample_email("sample-011")
+    second = load_sample_email("sample-012")
+    extractor = FixtureExtractor({first.id: _extract_result(), second.id: _extract_result()})
+    supplier = _supplier(email="y.tanaka@tanakaprecision.example")
+    dedup = DedupRegistry()
+
+    process_inbound_mail(
+        first,
+        supplier=supplier,
+        rfq=_rfq(),
+        dedup=dedup,
+        extractor=extractor,
+    )
+    stored = supplier.quote
+    kind = process_inbound_mail(
+        second,
+        supplier=supplier,
+        rfq=_rfq(),
+        dedup=dedup,
+        extractor=extractor,
+    )
+
+    assert kind == "unknown"
+    assert supplier.quote is stored
+    assert [request.email_id for request in extractor.requests] == [first.id]
+
+
+@pytest.mark.unit
+def test_process_inbound_mail_extracts_again_when_stored_quote_has_no_lines() -> None:
+    message = load_sample_email("sample-001")
+    extractor = FixtureExtractor({message.id: _extract_result()})
+    supplier = _supplier()
+    supplier.quote = _quote_record()
+    supplier.quote.as_sent.line_items = []
+
+    kind = process_inbound_mail(
+        message,
+        supplier=supplier,
+        rfq=_rfq(),
+        dedup=DedupRegistry(),
+        extractor=extractor,
+    )
+
+    assert kind == "quote"
+    assert extractor.requests
+    assert supplier.quote is not None
+    assert supplier.quote.as_sent.line_items[0].unit_price == 42.29
+
+
+@pytest.mark.unit
+def test_process_inbound_mail_writes_revised_quote_when_correction_is_open() -> None:
+    message = load_sample_email("sample-012")
+    extractor = FixtureExtractor({message.id: _extract_result()})
+    supplier = _supplier(email="y.tanaka@tanakaprecision.example")
+    supplier.quote = _quote_record()
+    supplier.correction_used = True
+    original_lines = [line.model_copy(deep=True) for line in supplier.quote.as_sent.line_items]
+
+    kind = process_inbound_mail(
+        message,
+        supplier=supplier,
+        rfq=_rfq(),
+        dedup=DedupRegistry(),
+        extractor=extractor,
+    )
+
+    assert kind == "quote"
+    assert supplier.quote is not None
+    assert supplier.quote.as_sent.line_items == original_lines
+    assert supplier.quote.revised_as_sent is not None
+    assert supplier.quote.revised_as_sent.grand_total == 99.0

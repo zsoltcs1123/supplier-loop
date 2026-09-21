@@ -40,6 +40,13 @@ def process_inbound_mail(
         message,
         seen_fingerprints=dedup.quote_fingerprints,
         fingerprint=fingerprint,
+        quote_open=supplier.quote is None or not supplier.quote.as_sent.line_items,
+        negotiation_open=supplier.negotiation_used and not supplier.own_quote_history,
+        revision_open=(
+            supplier.correction_used
+            and supplier.quote is not None
+            and supplier.quote.revised_as_sent is None
+        ),
     )
     if kind != "quote":
         return kind
