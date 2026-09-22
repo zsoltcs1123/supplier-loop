@@ -80,6 +80,7 @@ def test_snapshot_and_wipe_preserves_log_when_round_state_cleared(
         LogEvent(
             wall_time=datetime(2026, 9, 21, 9, 0, tzinfo=UTC),
             sim_time_seconds=10.0,
+            round_id="dev-1",
             kind="ingest",
             detail={"email_id": "in-round-1"},
         )
@@ -88,6 +89,7 @@ def test_snapshot_and_wipe_preserves_log_when_round_state_cleared(
         LogEvent(
             wall_time=datetime(2026, 9, 21, 9, 1, tzinfo=UTC),
             sim_time_seconds=20.0,
+            round_id="dev-1",
             kind="decision",
             detail={"note": "watermark \u2014 kept"},
         )
@@ -132,6 +134,7 @@ def test_snapshot_and_wipe_progress_stays_separate_from_log(
         LogEvent(
             wall_time=datetime(2026, 9, 21, 10, 0, tzinfo=UTC),
             sim_time_seconds=500.0,
+            round_id="dev-1",
             kind="reminder_due",
             detail={"supplier_id": "p02"},
         )

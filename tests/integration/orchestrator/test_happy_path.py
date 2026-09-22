@@ -206,6 +206,9 @@ def test_orchestrator_submits_clean_quotes_when_all_relevant_suppliers_reply(
     assert saved.suppliers["p02"].quote is not None
     assert saved.suppliers["p01"].phase == "done"
     assert saved.suppliers["p02"].phase == "done"
+    submit_events = [event for event in log.events_for_round("dev-1") if event.kind == "submit"]
+    assert submit_events
+    assert submit_events[-1].detail["warnings"] == []
 
 
 @pytest.mark.integration
@@ -226,6 +229,7 @@ def test_orchestrator_wipes_quotes_but_keeps_log_when_new_round_starts(
         LogEvent(
             wall_time=datetime(2026, 9, 21, 12, 0, tzinfo=UTC),
             sim_time_seconds=7200.0,
+            round_id="dev-1",
             kind="round_marker",
             detail={"round_id": "dev-1"},
         )

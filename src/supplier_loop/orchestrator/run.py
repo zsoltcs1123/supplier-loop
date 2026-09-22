@@ -1,6 +1,5 @@
 import time
 from collections.abc import Callable
-from datetime import UTC, datetime
 from typing import TextIO
 
 from supplier_loop.extract.port import Extractor
@@ -13,7 +12,7 @@ from supplier_loop.machine.negotiate import record_negotiation_reply
 from supplier_loop.machine.remind import send_due_reminders
 from supplier_loop.machine.ruling import handle_approver_ruling
 from supplier_loop.mail_kind.classify import classify_mail
-from supplier_loop.operational_log.log import LogEvent, OperationalLog
+from supplier_loop.operational_log.log import OperationalLog
 from supplier_loop.orchestrator.trigger import should_run_pass
 from supplier_loop.progress import emit_progress
 from supplier_loop.quote_pipeline.pipeline import process_inbound_mail
@@ -57,16 +56,14 @@ def run_pass(
     submitted = False
     if round_ready_to_submit(state):
         payload = build_submit_payload(state, simulator)
-        simulator.submit_results(payload)
+        echo = simulator.submit_results(payload)
         submitted = True
         sim_time = state.rfq.clock.sim_time_seconds
-        log.append(
-            LogEvent(
-                wall_time=datetime.now(UTC),
-                sim_time_seconds=sim_time,
-                kind="submit",
-                detail={"suppliers": sorted(payload)},
-            )
+        log.record(
+            round_id=state.rfq.clock.round_id,
+            sim_time_seconds=sim_time,
+            kind="submit",
+            detail={"suppliers": sorted(payload), "warnings": list(echo.warnings)},
         )
         if progress is not None:
             emit_progress(
@@ -139,13 +136,11 @@ def _ingest_entry(
     kind = _route_inbound(state, simulator, extractor, message)
     state.dedup.email_ids.add(entry_id)
     sim_time = state.rfq.clock.sim_time_seconds
-    log.append(
-        LogEvent(
-            wall_time=datetime.now(UTC),
-            sim_time_seconds=sim_time,
-            kind="ingest",
-            detail={"email_id": entry_id, "mail_kind": kind},
-        )
+    log.record(
+        round_id=state.rfq.clock.round_id,
+        sim_time_seconds=sim_time,
+        kind="ingest",
+        detail={"email_id": entry_id, "mail_kind": kind},
     )
     if progress is not None:
         emit_progress(

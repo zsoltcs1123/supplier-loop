@@ -77,6 +77,7 @@ def test_parser_omits_start_exam_command() -> None:
     assert "start-exam" not in help_text
     assert "run-dev" in help_text
     assert "resume-dev" in help_text
+    assert "pack-propose" in help_text
 
 
 @pytest.mark.unit

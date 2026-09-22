@@ -1,8 +1,7 @@
-from datetime import UTC, datetime
 from typing import TextIO
 
 from supplier_loop.machine.due import reminder_is_due
-from supplier_loop.operational_log.log import LogEvent, OperationalLog
+from supplier_loop.operational_log.log import OperationalLog
 from supplier_loop.progress import emit_progress
 from supplier_loop.relevance import relevant_supplier_ids
 from supplier_loop.round_state.models import RoundState
@@ -36,11 +35,9 @@ def send_due_reminders(
                 kind="reminder_due",
                 subject=f"{supplier_id} reminder_due",
             )
-        log.append(
-            LogEvent(
-                wall_time=datetime.now(UTC),
-                sim_time_seconds=sim_time,
-                kind="reminder_due",
-                detail={"supplier_id": supplier_id, "email_id": email_id},
-            )
+        log.record(
+            round_id=state.rfq.clock.round_id,
+            sim_time_seconds=sim_time,
+            kind="reminder_due",
+            detail={"supplier_id": supplier_id, "email_id": email_id},
         )

@@ -1,7 +1,6 @@
-from datetime import UTC, datetime
 from typing import TextIO
 
-from supplier_loop.operational_log.log import LogEvent, OperationalLog
+from supplier_loop.operational_log.log import OperationalLog
 from supplier_loop.progress import emit_progress
 from supplier_loop.relevance import bom_lines_for_supplier, relevant_supplier_ids
 from supplier_loop.round_state.models import RoundState, SupplierFacts
@@ -49,13 +48,11 @@ def _send_rfq(
             kind="rfq_sent",
             subject=f"{supplier.supplier_id} {email_id}",
         )
-    log.append(
-        LogEvent(
-            wall_time=datetime.now(UTC),
-            sim_time_seconds=sim_time,
-            kind="rfq_sent",
-            detail={"supplier_id": supplier.supplier_id, "email_id": email_id},
-        )
+    log.record(
+        round_id=state.rfq.clock.round_id,
+        sim_time_seconds=sim_time,
+        kind="rfq_sent",
+        detail={"supplier_id": supplier.supplier_id, "email_id": email_id},
     )
 
 

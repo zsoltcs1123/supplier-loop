@@ -13,6 +13,7 @@ from supplier_loop.extract.port import Extractor
 from supplier_loop.extract.spend import DEFAULT_SPEND_PATH, load_spend
 from supplier_loop.operational_log.log import OperationalLog
 from supplier_loop.orchestrator.run import run_until_submit
+from supplier_loop.propose import write_pack
 from supplier_loop.round_state.store import RoundStore, snapshot_world
 from supplier_loop.simulator.mcp import McpSimulator
 from supplier_loop.simulator.port import SubmitEntry
@@ -24,11 +25,14 @@ _STATE_ROOT = Path(".artifacts")
 
 
 def main(argv: list[str] | None = None) -> None:
-    """Run ping or a live development round against the simulator."""
+    """Run ping, a live development round, or dump a proposal pack from disk."""
     _force_utf8_stdio()
     parser = build_parser()
     args = parser.parse_args(argv)
     load_dotenv(Path(".env"))
+    if args.command == "pack-propose":
+        write_pack(artifacts_root=_STATE_ROOT, out=sys.stdout)
+        return
     url, token = require_credentials()
     with McpToolSession(url, token) as session:
         if args.command == "ping":
@@ -82,6 +86,10 @@ def build_parser() -> argparse.ArgumentParser:
         "resume-dev",
         parents=[loop_opts],
         help="continue the current round until submit_results",
+    )
+    sub.add_parser(
+        "pack-propose",
+        help="dump a proposal pack from round files on disk; no MCP, no OpenRouter",
     )
     return parser
 

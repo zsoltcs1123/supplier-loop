@@ -27,9 +27,12 @@ Copy `.env.example` to `.env` and fill in credentials when you have them. The li
 uv run python -m supplier_loop ping      # MCP connectivity; does not start a round
 uv run python -m supplier_loop run-dev   # request_dev_round, then loop until submit_results
 uv run python -m supplier_loop resume-dev  # continue the current round, including after you start the exam
+uv run python -m supplier_loop pack-propose  # dump a proposal pack from round files; no MCP, no OpenRouter
 ```
 
 `ping` must succeed before `run-dev`. `request_dev_round` is capped at 20 calls per token. `run-dev` records each call in [dev-rounds.json](dev-rounds.json). Ping does not count.
+
+`pack-propose` reads `.artifacts/round/round.json`, `.artifacts/ops.jsonl`, and `.artifacts/llm-spend.json`. It writes `.artifacts/proposals/<round_id>/pack.md`. Run it after a finished development round, not during the exam. The quoting loop never calls it. How to write a proposal: [docs/proposals/PROMPT.md](docs/proposals/PROMPT.md).
 
 The loop never calls `start_exam`. Only you do, out of band. After you start the exam, run `resume-dev` against that round. Set `PYTHONIOENCODING=utf-8` so email watermarks print.
 
