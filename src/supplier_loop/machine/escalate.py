@@ -137,19 +137,13 @@ def _class_specific_claim(
     if class_num == 2:
         return _class_2_claim(as_sent, state, supplier.supplier_id)
     if class_num == 3:
-        return (
-            f"payment terms {as_sent.payment_terms!r} "
-            f"differs from required {assignment.required_payment_terms!r}."
-        )
+        return _class_3_claim(as_sent, assignment)
     if class_num == 4:
-        return (
-            f"validity {as_sent.validity_days} days "
-            f"is shorter than required {assignment.required_validity_days} days."
-        )
+        return _class_4_claim(as_sent, assignment)
     if class_num == 6:
         return _class_6_claim(supplier)
     if class_num == 7:
-        return "supplier content contains embedded instructions."
+        return _class_7_claim(supplier)
     return "discrepancy requires approver review."
 
 
@@ -166,6 +160,34 @@ def _class_2_claim(as_sent: AsSentQuote, state: RoundState, supplier_id: str) ->
         parts = [f"{material_id} quoted {qty:g}" for material_id, qty in mismatches]
         return f"quantity mismatch on {', '.join(parts)}."
     return "quoted quantities match the BOM."
+
+
+def _class_3_claim(as_sent: AsSentQuote, assignment: Assignment) -> str:
+    if as_sent.payment_terms != assignment.required_payment_terms:
+        return (
+            f"payment terms {as_sent.payment_terms!r} "
+            f"differs from required {assignment.required_payment_terms!r}."
+        )
+    return f"payment terms match required {assignment.required_payment_terms!r}."
+
+
+def _class_4_claim(as_sent: AsSentQuote, assignment: Assignment) -> str:
+    if as_sent.validity_days < assignment.required_validity_days:
+        return (
+            f"validity {as_sent.validity_days} days "
+            f"is shorter than required {assignment.required_validity_days} days."
+        )
+    return (
+        f"validity {as_sent.validity_days} days "
+        f"meets required {assignment.required_validity_days} days."
+    )
+
+
+def _class_7_claim(supplier: SupplierFacts) -> str:
+    phrase = supplier.injection_phrase
+    if phrase:
+        return f"supplier content contains embedded instructions: {phrase!r}."
+    return "supplier content contains embedded instructions."
 
 
 def _class_6_claim(supplier: SupplierFacts) -> str:

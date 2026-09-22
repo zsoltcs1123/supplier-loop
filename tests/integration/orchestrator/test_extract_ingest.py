@@ -157,7 +157,7 @@ def test_run_pass_retries_extract_when_quote_has_no_lines(tmp_path: Path) -> Non
 
 
 @pytest.mark.integration
-def test_run_pass_does_not_retry_empty_quote_when_already_tried(tmp_path: Path) -> None:
+def test_run_pass_does_not_retry_empty_quote_after_extract_limit(tmp_path: Path) -> None:
     store = RoundStore(tmp_path / "round")
     log = OperationalLog(tmp_path / "ops.jsonl")
     simulator = _simulator()
@@ -167,24 +167,13 @@ def test_run_pass_does_not_retry_empty_quote_when_already_tried(tmp_path: Path) 
         _quote_mail(),
         body="qty 100 Steel I-Beam 200mm 40.00 USD\nqty 1 extra 0.00 USD",
     )
-    retries: set[str] = set()
-    run_pass(
-        simulator,
-        store,
-        FixtureExtractor({"in-p01": _empty()}),
-        log,
-        empty_quote_retries=retries,
-    )
+    run_pass(simulator, store, FixtureExtractor({"in-p01": _empty()}), log)
+    run_pass(simulator, store, FixtureExtractor({"in-p01": _empty()}), log)
     extractor = FixtureExtractor({"in-p01": _quoted()})
-    run_pass(
-        simulator,
-        store,
-        extractor,
-        log,
-        empty_quote_retries=retries,
-    )
+    run_pass(simulator, store, extractor, log)
 
     assert extractor.requests == []
     saved = store.load()
     assert saved.suppliers["p01"].quote is not None
     assert saved.suppliers["p01"].quote.as_sent.line_items == []
+    assert saved.suppliers["p01"].empty_extract_count == 2

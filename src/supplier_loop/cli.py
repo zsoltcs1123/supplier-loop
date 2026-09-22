@@ -25,6 +25,7 @@ _STATE_ROOT = Path(".artifacts")
 
 def main(argv: list[str] | None = None) -> None:
     """Run ping or a live development round against the simulator."""
+    _force_utf8_stdio()
     parser = build_parser()
     args = parser.parse_args(argv)
     load_dotenv(Path(".env"))
@@ -226,3 +227,10 @@ def _unquote(value: str) -> str:
     if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
         return value[1:-1]
     return value
+
+
+def _force_utf8_stdio() -> None:
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(encoding="utf-8", errors="replace")

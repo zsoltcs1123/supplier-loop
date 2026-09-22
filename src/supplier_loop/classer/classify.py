@@ -15,16 +15,15 @@ def required_classes(
     assignment = rfq.assignment
     catalog = _supplier_material_ids(rfq.directory, supplier_id)
 
-    if as_sent.line_items and _has_missing_bom_line(
-        as_sent.line_items, assignment.line_items, catalog
-    ):
-        classes.add(1)
+    if as_sent.line_items:
+        if _has_missing_bom_line(as_sent.line_items, assignment.line_items, catalog):
+            classes.add(1)
+        if as_sent.payment_terms != assignment.required_payment_terms:
+            classes.add(3)
+        if as_sent.validity_days < assignment.required_validity_days:
+            classes.add(4)
     if _has_quantity_mismatch(as_sent.line_items, assignment.line_items, catalog):
         classes.add(2)
-    if as_sent.payment_terms != assignment.required_payment_terms:
-        classes.add(3)
-    if as_sent.validity_days < assignment.required_validity_days:
-        classes.add(4)
     if _has_price_above_ceiling(
         as_sent.line_items,
         rfq.price_history,

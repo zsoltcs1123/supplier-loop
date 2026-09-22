@@ -67,6 +67,8 @@ class SupplierFacts(BaseModel):
     last_rejection_class: int | None = None
     question_answered: bool = False
     injection_suspected: bool = False
+    injection_phrase: str | None = None
+    empty_extract_count: int = 0
     negotiation_used: bool = False
     negotiation_target_total: float | None = None
     negotiation_reply_total: float | None = None

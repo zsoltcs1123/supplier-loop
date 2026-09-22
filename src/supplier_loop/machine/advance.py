@@ -3,6 +3,7 @@ from supplier_loop.machine.constants import NEGOTIATION_REPLY_SIM_DAYS
 from supplier_loop.machine.escalate import send_pending_escalations
 from supplier_loop.machine.negotiate import negotiate_once, record_negotiation_reply
 from supplier_loop.relevance import relevant_supplier_ids
+from supplier_loop.round_state.empty_quote import awaiting_empty_quote_retry
 from supplier_loop.round_state.models import RoundState, SupplierFacts
 from supplier_loop.simulator.port import Simulator
 
@@ -14,6 +15,8 @@ def advance_suppliers(state: RoundState, simulator: Simulator) -> None:
     for supplier_id in relevant_supplier_ids(state):
         supplier = state.suppliers[supplier_id]
         if supplier.phase not in {"quoted", "escalated"} or supplier.quote is None:
+            continue
+        if awaiting_empty_quote_retry(supplier):
             continue
         _apply_classer(supplier, state)
         classes = _with_last_rejection(supplier)

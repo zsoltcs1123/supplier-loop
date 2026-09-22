@@ -53,7 +53,7 @@ If the trigger finds nothing, the rest of the pass does not run. The nine-step p
 
 ## The ten modules
 
-There are ten modules. A raw-text injection scan is not one of them. See [Later, if a live round forces it](#later-if-a-live-round-forces-it).
+There are ten modules. A raw-text injection scan is a function in the quote pipeline, not a module.
 
 **1. Orchestrator.** The orchestrator is a combo trigger, not a side effect of polling. It runs a pass when the inbox delta is non-empty, or when the machine raises a due alarm. The due alarms are
 `reminder_due`, `validity_alarm`, and the quiet margin for round-done. Otherwise it returns. The iteration cap is a stop, not a success. `start_exam` and `request_dev_round` stay with the operator.
@@ -67,11 +67,12 @@ in-memory adapter in tests. Act and verify run against the in-memory adapter.
 **4. Extract port.** The extract port is a thin interface with two adapters. Tests use a fixture mock. Runtime extract uses OpenRouter HTTP. Cursor is the editor, not a runtime adapter. The schema is
 quote fields plus `injection_suspected`. Extra fields are forbidden. `action_taken` and `auto_approved` are not in the schema on either adapter.
 
-**5. Quote pipeline.** This module chooses the extract input. It uses text from the PDF text layer when that layer exists, vision on photos, and raw text otherwise. The PDF text reader is a function in this module, not a port. Normalize and validate run in code on the structured extract. They never go back to supplier prose. This module is the only writer of the
+**5. Quote pipeline.** This module chooses the extract input. It uses text from the PDF text layer when that layer exists, vision on photos, and raw text otherwise. The PDF text reader is a function in this module, not a port. A scan of supplier body and PDF text may set `injection_suspected`; it does not pick an action from prose. Normalize and validate run in code on the structured extract. They never go back to supplier prose. This module is the only writer of the
 Quote record. Field rules live in [docs/SEED.md](SEED.md).
 
 **6. Classer.** The classer is a pure function. Its input is the Quote record, RFQ context, price history, `injection_suspected`, and own quote history. Its output is the set of required escalation
-classes. Code owns rules 1 through 6. Class 7 follows `injection_suspected`. A false flag does not skip class 7. There is no override. The classer does not write `auto_approved` or `action_taken`.
+classes. Code owns rules 1 through 6. Class 7 follows `injection_suspected`. A false extract flag does not skip class 7 when the body or PDF scan set the flag. There is no override. The classer omits
+classes 1, 3, and 4 when the quote has no line items. The classer does not write `auto_approved` or `action_taken`.
 
 **7. Supplier lifecycle machine (the machine).** Phases follow [docs/SEED.md](SEED.md): idle, `rfq_sent`, `awaiting_quote`, `quoted`, `escalated`, `done`. The machine owns waits, one reminder, and
 outbound intents. Several required classes mean several emails in one pass. The machine has two rework paths:
@@ -161,7 +162,7 @@ The simulator adapter and the extract port are the only seams with two adapters.
 
 Supplier artifacts are untrusted. Known traps include buyer-side notes that say no escalation is required, mail that claims exemption from approval, and hidden unicode.
 
-The model never sees action fields. After extract, code does not read supplier prose to decide. Injection is class 7, from `injection_suspected` only.
+The model never sees action fields. After extract, code does not read supplier prose to decide an action. A scan of body and PDF text may set `injection_suspected` only. Injection is class 7, from that flag. Class 7 mail quotes the trapped phrase when the scan found one.
 
 The classer is the only path that names required classes. The submitter is the only path that may set `auto_approved` to true. It sets that field only from sent-record evidence. Negotiation and
 correction re-enter the classer. They do not bypass it.
@@ -189,7 +190,6 @@ model whether to escalate. The mock extract adapter is how most of the loop is b
 
 | Item                                                                                                              | Trigger                                                                      | Approach                                                                                                                 |
 | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Backup injection heuristic                                                                                        | A live round misses known traps such as exemption language in sample traffic | The scan may set `injection_suspected` only. It does not pick an action from prose. Out of scope for the first milestone |
 | PDF-reader port                                                                                                   | A second reader is actually needed                                           | Then the seam is real. Not before                                                                                        |
 | Silence threshold, quiet margin, poll interval, rejection-cycle cap                            | Bound in [docs/LOOP_CONTRACT.md](LOOP_CONTRACT.md) and [docs/SEED.md](SEED.md) | The machine holds the numbers. This file does not retune them                         |
 
@@ -199,6 +199,7 @@ model whether to escalate. The mock extract adapter is how most of the loop is b
 
 | Version | Date       | Changes                                                                                                                                                                                                                 |
 | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1.9     | 2026-09-22 | Quote pipeline scan may set `injection_suspected`. Classer omits classes 1, 3, and 4 when the quote has no lines.                                                                                                       |
 | 1.8     | 2026-09-21 | Mail kind follows the supplier wait. Unknown mail is left in place.                                                                                                                                                    |
 | 1.7     | 2026-09-21 | Unattended loop waits for an approver ruling before submit. Clock numbers live in the loop contract.                                                                                                                  |
 | 1.6     | 2026-09-21 | Runtime extract model `google/gemini-2.5-pro`.                                                                                                                                                                         |

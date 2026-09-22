@@ -264,3 +264,9 @@ def test_mcp_download_attachment_decodes_base64_when_present() -> None:
 
     assert attachment.content == b"hello"
     assert attachment.filename == "quote.pdf"
+
+
+@pytest.mark.unit
+def test_mcp_simulator_does_not_expose_start_exam() -> None:
+    assert not hasattr(McpSimulator, "start_exam")
+    assert "start_exam" not in vars(McpSimulator)

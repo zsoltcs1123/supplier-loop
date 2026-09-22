@@ -70,6 +70,16 @@ def test_ping_writes_clock_when_session_returns_tools_and_clock(tmp_path: Path) 
 
 
 @pytest.mark.unit
+def test_parser_omits_start_exam_command() -> None:
+    help_text = build_parser().format_help()
+
+    assert "start_exam" not in help_text
+    assert "start-exam" not in help_text
+    assert "run-dev" in help_text
+    assert "resume-dev" in help_text
+
+
+@pytest.mark.unit
 def test_parser_defaults_poll_and_max_passes_when_run_dev() -> None:
     args = build_parser().parse_args(["run-dev"])
 

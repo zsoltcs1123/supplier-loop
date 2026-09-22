@@ -18,6 +18,7 @@ from supplier_loop.orchestrator.trigger import should_run_pass
 from supplier_loop.progress import emit_progress
 from supplier_loop.quote_pipeline.pipeline import process_inbound_mail
 from supplier_loop.relevance import supplier_for_address
+from supplier_loop.round_state.empty_quote import awaiting_empty_quote_retry
 from supplier_loop.round_state.fingerprint import quote_fingerprint
 from supplier_loop.round_state.models import RoundState
 from supplier_loop.round_state.store import RoundStore
@@ -32,9 +33,7 @@ def run_pass(
     log: OperationalLog,
     *,
     progress: TextIO | None = None,
-    empty_quote_retries: set[str] | None = None,
 ) -> bool:
-    retries = empty_quote_retries if empty_quote_retries is not None else set()
     state = store.load()
     state.inbox = simulator.list_inbox()
     state.rfq.clock = simulator.get_sim_clock()
@@ -49,14 +48,7 @@ def run_pass(
         )
     if not should_run_pass(state):
         return False
-    _ingest_inbox(
-        state,
-        simulator,
-        extractor,
-        log,
-        progress=progress,
-        empty_quote_retries=retries,
-    )
+    _ingest_inbox(state, simulator, extractor, log, progress=progress)
     send_pending_rfqs(state, simulator, log, progress=progress)
     if "reminder_due" in due_alarms(state):
         send_due_reminders(state, simulator, log, progress=progress)
@@ -100,16 +92,8 @@ def run_until_submit(
     sleeper: Callable[[float], None] | None = None,
 ) -> dict[str, SubmitEntry]:
     pause = sleeper or time.sleep
-    empty_quote_retries: set[str] = set()
     for _ in range(max_passes):
-        if run_pass(
-            simulator,
-            store,
-            extractor,
-            log,
-            progress=progress,
-            empty_quote_retries=empty_quote_retries,
-        ):
+        if run_pass(simulator, store, extractor, log, progress=progress):
             return build_submit_payload(store.load(), simulator)
         if pause_seconds > 0:
             pause(pause_seconds)
@@ -123,10 +107,9 @@ def _ingest_inbox(
     log: OperationalLog,
     *,
     progress: TextIO | None = None,
-    empty_quote_retries: set[str],
 ) -> None:
     for entry in state.inbox:
-        retry = _needs_quote_retry(state, entry, empty_quote_retries)
+        retry = _needs_quote_retry(state, entry)
         if entry.id in state.dedup.email_ids and not retry:
             continue
         _ingest_entry(
@@ -137,7 +120,6 @@ def _ingest_inbox(
             entry_id=entry.id,
             retry=retry,
             progress=progress,
-            empty_quote_retries=empty_quote_retries,
         )
 
 
@@ -150,13 +132,11 @@ def _ingest_entry(
     entry_id: str,
     retry: bool,
     progress: TextIO | None,
-    empty_quote_retries: set[str],
 ) -> None:
     message = simulator.read_email(entry_id)
     if retry:
         state.dedup.quote_fingerprints.discard(quote_fingerprint(message))
     kind = _route_inbound(state, simulator, extractor, message)
-    _note_empty_quote(state, message, empty_quote_retries)
     state.dedup.email_ids.add(entry_id)
     sim_time = state.rfq.clock.sim_time_seconds
     log.append(
@@ -209,31 +189,11 @@ def _route_inbound(
     return "unknown"
 
 
-def _needs_quote_retry(
-    state: RoundState,
-    entry: InboxEntry,
-    empty_quote_retries: set[str],
-) -> bool:
-    if entry.id in empty_quote_retries:
-        return False
+def _needs_quote_retry(state: RoundState, entry: InboxEntry) -> bool:
     directory_entry = supplier_for_address(state, entry.from_address)
     if directory_entry is None:
         return False
-    quote = state.suppliers[directory_entry.supplier_id].quote
-    return quote is not None and not quote.as_sent.line_items
-
-
-def _note_empty_quote(
-    state: RoundState,
-    message: EmailMessage,
-    empty_quote_retries: set[str],
-) -> None:
-    directory_entry = supplier_for_address(state, message.from_address)
-    if directory_entry is None:
-        return
-    quote = state.suppliers[directory_entry.supplier_id].quote
-    if quote is not None and not quote.as_sent.line_items:
-        empty_quote_retries.add(message.id)
+    return awaiting_empty_quote_retry(state.suppliers[directory_entry.supplier_id])
 
 
 def _extract_attachments(simulator: Simulator, message: EmailMessage) -> list[ExtractAttachment]:

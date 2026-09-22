@@ -56,7 +56,7 @@ Poll every 5 real seconds. The dev clock observed on 2026-09-21 advanced about 7
 
 Submit when every relevant supplier has a quote and is done, or was reminded and never quoted. A reminded PDF or photo supplier waits 3 sim-days after the reminder, and the inbox must be quiet for that same margin. Other reminded suppliers wait 2 sim-days.
 
-Stop after 5760 polls (8 real hours) if that has not happened. One correction and one negotiation per supplier. If a counter-offer has no reply after 1 sim-day, escalate the negotiation anyway. If an escalation is still open 1 sim-day after the last claim, submit that supplier with `auto_approved` false. A specifics resend restarts that wait. The loop does not call `start_exam`.
+Stop after 5760 polls (8 real hours) if that has not happened. One correction and one negotiation per supplier. If a counter-offer has no reply after 1 sim-day, escalate the negotiation anyway. If an escalation is still open 1 sim-day after the last claim, submit that supplier with `auto_approved` false. A specifics resend restarts that wait. The loop does not call `start_exam`. After the operator starts the exam, `uv run python -m supplier_loop resume-dev` runs against that round.
 
 ## State vs log
 

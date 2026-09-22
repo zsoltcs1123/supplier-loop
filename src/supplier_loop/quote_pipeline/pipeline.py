@@ -3,6 +3,7 @@ from collections.abc import Sequence
 from supplier_loop.extract.port import Extractor
 from supplier_loop.extract.schema import ExtractAttachment, ExtractRequest, ExtractResult
 from supplier_loop.mail_kind.classify import MailKind, classify_mail
+from supplier_loop.quote_pipeline.injection import scan_injection
 from supplier_loop.quote_pipeline.normalize import description_catalog, normalize_quote_line
 from supplier_loop.quote_pipeline.pdf_text import read_pdf_text
 from supplier_loop.quote_pipeline.recompute import recomputed_grand_total, recomputed_line_total
@@ -50,7 +51,8 @@ def process_inbound_mail(
     )
     if kind != "quote":
         return kind
-    extracted = extractor.extract(_extract_request(message, attachments))
+    request = _extract_request(message, attachments)
+    extracted = extractor.extract(request)
     record = build_quote_record(extracted, rfq)
     if supplier.correction_used and supplier.quote is not None:
         supplier.quote.revised_as_sent = record.as_sent
@@ -58,7 +60,12 @@ def process_inbound_mail(
         supplier.quote.recomputed_grand_total = record.recomputed_grand_total
     else:
         supplier.quote = record
-    supplier.injection_suspected = extracted.injection_suspected
+        if not record.as_sent.line_items:
+            supplier.empty_extract_count += 1
+    phrase = scan_injection(request.body)
+    if phrase is not None:
+        supplier.injection_phrase = phrase
+    supplier.injection_suspected = extracted.injection_suspected or phrase is not None
     dedup.quote_fingerprints.add(fingerprint)
     return kind
 

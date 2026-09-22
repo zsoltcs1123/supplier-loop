@@ -149,9 +149,9 @@ def test_required_classes_includes_class_1_when_catalog_line_missing_from_quote(
 
 
 @pytest.mark.unit
-def test_required_classes_omits_class_1_when_quote_has_no_line_items() -> None:
+def test_required_classes_omits_classes_1_3_4_when_quote_has_no_line_items() -> None:
     rfq = _rfq()
-    quote = _quote_record(as_sent=_as_sent(line_items=[]))
+    quote = _quote_record(as_sent=_as_sent(line_items=[], payment_terms="", validity_days=0))
 
     assert (
         required_classes(
@@ -163,6 +163,20 @@ def test_required_classes_omits_class_1_when_quote_has_no_line_items() -> None:
         )
         == frozenset()
     )
+
+
+@pytest.mark.unit
+def test_required_classes_includes_class_7_when_empty_quote_is_injection() -> None:
+    rfq = _rfq()
+    quote = _quote_record(as_sent=_as_sent(line_items=[], payment_terms="", validity_days=0))
+
+    assert required_classes(
+        quote,
+        rfq,
+        supplier_id="p01",
+        injection_suspected=True,
+        own_quote_history=[],
+    ) == frozenset({7})
 
 
 @pytest.mark.unit

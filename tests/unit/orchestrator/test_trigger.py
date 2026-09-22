@@ -1,6 +1,7 @@
 import pytest
 
 from supplier_loop.orchestrator.trigger import should_run_pass
+from supplier_loop.round_state.empty_quote import EMPTY_QUOTE_EXTRACT_LIMIT
 from supplier_loop.round_state.models import (
     AsSentQuote,
     DedupRegistry,
@@ -162,3 +163,25 @@ def test_trigger_runs_pass_when_quote_has_no_line_items() -> None:
     )
 
     assert should_run_pass(state) is True
+
+
+@pytest.mark.unit
+def test_trigger_skips_empty_quote_when_extract_limit_reached() -> None:
+    state = _state(
+        phases={"p01": "quoted", "p02": "awaiting_quote"},
+        inbox_ids=["in-1"],
+        seen_ids={"in-1"},
+    )
+    state.suppliers["p01"].quote = QuoteRecord(
+        as_sent=AsSentQuote(
+            line_items=[],
+            payment_terms="",
+            validity_days=0,
+            grand_total=0.0,
+        ),
+        recomputed_total=0.0,
+        recomputed_grand_total=0.0,
+    )
+    state.suppliers["p01"].empty_extract_count = EMPTY_QUOTE_EXTRACT_LIMIT
+
+    assert should_run_pass(state) is False

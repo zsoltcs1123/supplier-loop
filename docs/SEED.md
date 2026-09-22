@@ -90,8 +90,8 @@ can fill. A reminder, a question answer, one correction request, and one negotia
 
 ### Extract
 
-Unstructured artifacts only: inline text, pasted tables, PDF text, photos. The model may set `injection_suspected`. The model never obeys embedded text and never skips escalation. If that flag is set,
-code always escalates class 7.
+Unstructured artifacts only: inline text, pasted tables, PDF text, photos. The model may set `injection_suspected`. A code scan of supplier body and PDF text may also set that flag. The scan does not
+pick an action from prose. The model never obeys embedded text and never skips escalation. If that flag is set, code always escalates class 7.
 
 ### Normalize
 
