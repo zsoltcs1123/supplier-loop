@@ -13,7 +13,7 @@ Measured live-round numbers: [SELF-EVALUATION.md](SELF-EVALUATION.md).
 - Cursor as coding agent
 - Agent Skills from my [collection](https://github.com/zsoltcs1123/ai-dev-zs): `project-seed`, `system-architecture`, `architecture`, `program-design`, `code-review`
 - My [python-uv-template](https://github.com/zsoltcs1123/python-uv-template) repo
-- Anneal, my private product state database (export is provided in `.anneal/export/`)
+- [Anneal](.anneal/export/index.md), my private product state database (export provided)
 
 ## Process
 
