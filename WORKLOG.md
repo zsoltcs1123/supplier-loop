@@ -25,6 +25,7 @@ Measured live-round numbers: [SELF-EVALUATION.md](SELF-EVALUATION.md).
   - C6-C9: babysit, improve + test
   - C10: bonus
 - Phase 4: Wrap up, anneal export, session logs, assemble email etc (1-2 hours)
+  - Cursor transcripts exported to [docs/cursor-sessions/INDEX.md](docs/cursor-sessions/INDEX.md)
 
 Total: 12-14 hours.
 
