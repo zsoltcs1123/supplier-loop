@@ -4,13 +4,15 @@
 
 My approach was to write a boring python loop with minimal LLM involvement. This achieves consistency and reliable behavior, while keeping the token costs low.
 
-Details: [SEED]() and [ARCHITECTURE]()
+Details: [SEED](docs/SEED.md) and [ARCHITECTURE](docs/ARCHITECTURE.md).
+
+Measured live-round numbers: [SELF-EVALUATION.md](SELF-EVALUATION.md).
 
 ## Tools
 
 - Cursor as coding agent
-- Agent Skills from my [collection]() - `project-seed`, `system-architecture`, `arhictecture`, `program-design`, `code-review`
-- My [python-uv-template repo]()
+- Agent Skills from my [collection](https://github.com/zsoltcs1123/ai-dev-zs): `project-seed`, `system-architecture`, `architecture`, `program-design`, `code-review`
+- My [python-uv-template](https://github.com/zsoltcs1123/python-uv-template) repo
 - Anneal, my private product state database (export is provided in `.anneal/export/`)
 
 ## Process
@@ -28,7 +30,7 @@ Total: 12-14 hours.
 
 ## Ideas not implemented
 
-- Always try crude extrator first, fallback to LLM on fail
+- Always try crude extractor first, fallback to LLM on fail
 - If image/extraction fails, retry with different/stronger model
 - Proper System evolvement (primitives started in C10)
 - Typer CLI

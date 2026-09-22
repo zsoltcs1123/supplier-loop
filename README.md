@@ -33,6 +33,8 @@ uv run python -m supplier_loop resume-dev  # continue the current round, includi
 
 The loop never calls `start_exam`. Only you do, out of band. After you start the exam, run `resume-dev` against that round. Set `PYTHONIOENCODING=utf-8` so email watermarks print.
 
+Measured live-round numbers and known weaknesses: [SELF-EVALUATION.md](SELF-EVALUATION.md).
+
 ## Development
 
 See **[DEVELOPING.md](DEVELOPING.md)** for commands, hooks, and commit conventions.
