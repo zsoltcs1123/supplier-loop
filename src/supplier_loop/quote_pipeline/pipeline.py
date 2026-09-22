@@ -5,7 +5,7 @@ from supplier_loop.extract.schema import ExtractAttachment, ExtractRequest, Extr
 from supplier_loop.mail_kind.classify import MailKind, classify_mail
 from supplier_loop.quote_pipeline.injection import scan_injection
 from supplier_loop.quote_pipeline.normalize import description_catalog, normalize_quote_line
-from supplier_loop.quote_pipeline.pdf_text import read_pdf_text
+from supplier_loop.quote_pipeline.pdf_text import read_pdf_text, render_pdf_pages
 from supplier_loop.quote_pipeline.recompute import recomputed_grand_total, recomputed_line_total
 from supplier_loop.round_state.fingerprint import quote_fingerprint
 from supplier_loop.round_state.models import (
@@ -104,9 +104,19 @@ def _choose_extract_input(
     vision: list[ExtractAttachment] = []
     for item in hints:
         if _is_pdf(item):
-            text = read_pdf_text(item.content)
+            content = item.content or b""
+            text = read_pdf_text(content)
             if text:
                 pdf_texts.append(text)
+            elif content:
+                for index, png in enumerate(render_pdf_pages(content)):
+                    vision.append(
+                        ExtractAttachment(
+                            filename=f"{item.filename}-page-{index + 1}.png",
+                            mime_type="image/png",
+                            content=png,
+                        )
+                    )
             continue
         if _is_image(item) and item.content:
             vision.append(item)

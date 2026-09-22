@@ -105,7 +105,7 @@ def test_ruling_restates_class_six_claim_once_when_approver_asks_for_specifics()
     assert sent[0][1] == "[REF:p02] class 6"
     assert sent[0][2].startswith("Specifics: ")
     assert "supplier reply 4,116.00" in sent[0][2]
-    assert "differs from original 3,951.60" in sent[0][2]
+    assert "differs from original 14,996.80" in sent[0][2]
     assert "counter 4,116.00" in sent[0][2]
     assert supplier.phase == "escalated"
     assert supplier.escalation_wait_since_sim_seconds == 10_000.0

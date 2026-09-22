@@ -14,7 +14,7 @@ from supplier_loop.extract.spend import DEFAULT_SPEND_PATH, load_spend
 from supplier_loop.operational_log.log import OperationalLog
 from supplier_loop.orchestrator.run import run_until_submit
 from supplier_loop.propose import write_pack
-from supplier_loop.round_state.store import RoundStore, snapshot_world
+from supplier_loop.round_state.store import RoundStore, snapshot_world, stored_round_id
 from supplier_loop.simulator.mcp import McpSimulator
 from supplier_loop.simulator.port import SubmitEntry
 from supplier_loop.simulator.session import McpToolSession, ToolCaller, ToolSession
@@ -155,11 +155,17 @@ def continue_dev_round(
     max_passes: int = _MAX_PASSES,
 ) -> dict[str, SubmitEntry]:
     round_store = store or RoundStore(_STATE_ROOT / "round")
+    clock = McpSimulator(session).get_sim_clock()
+    attached = stored_round_id(round_store) != clock.round_id
+    if attached:
+        round_store.wipe()
     simulator = McpSimulator(session, sent_log=round_store.root / "sent.json")
-    clock = simulator.get_sim_clock()
+    if attached:
+        snapshot_world(simulator, round_store)
     out.write(
         f"resume round_id={clock.round_id} mode={clock.mode} "
-        f"sim_time_seconds={clock.sim_time_seconds:g}\n"
+        f"sim_time_seconds={clock.sim_time_seconds:g}"
+        f"{' attach' if attached else ''}\n"
     )
     ops = log or OperationalLog(_STATE_ROOT / "ops.jsonl")
     return _finish_round(

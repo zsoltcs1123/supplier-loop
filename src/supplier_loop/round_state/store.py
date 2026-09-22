@@ -36,6 +36,14 @@ def snapshot_world(simulator: Simulator, store: RoundStore) -> RoundState:
     return state
 
 
+def stored_round_id(store: RoundStore) -> str | None:
+    path = store.root / "round.json"
+    if not path.exists():
+        return None
+    state = RoundState.model_validate_json(path.read_text(encoding="utf-8"))
+    return state.rfq.clock.round_id
+
+
 class RoundStore:
     def __init__(self, root: Path) -> None:
         self._root = root

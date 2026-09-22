@@ -1,10 +1,21 @@
+import json
 import os
 from io import StringIO
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 
-from supplier_loop.cli import build_extractor, build_parser, load_dotenv, ping, require_credentials
+from supplier_loop.cli import (
+    build_extractor,
+    build_parser,
+    continue_dev_round,
+    load_dotenv,
+    ping,
+    require_credentials,
+)
+from supplier_loop.extract.fixture import FixtureExtractor
+from supplier_loop.round_state.store import RoundStore
 
 
 class _PingSession:
@@ -103,6 +114,155 @@ def test_build_extractor_exits_when_api_key_missing(monkeypatch: pytest.MonkeyPa
 
     with pytest.raises(SystemExit, match="OPENROUTER_API_KEY"):
         build_extractor()
+
+
+class _ResumeClockSession:
+    def __init__(self, *, round_id: str = "exam-1") -> None:
+        self.calls: list[str] = []
+        self.round_id = round_id
+
+    def list_tool_names(self) -> list[str]:
+        return ["get_sim_clock"]
+
+    def call_tool(self, name: str, arguments: dict[str, object] | None = None) -> object:
+        self.calls.append(name)
+        if name == "get_sim_clock":
+            return {
+                "sim_time_seconds": 100.0,
+                "sim_time_days": 0.0,
+                "round_id": self.round_id,
+                "mode": "exam",
+                "clock_factor": 60.0,
+            }
+        raise AssertionError(name)
+
+
+@pytest.mark.unit
+def test_continue_dev_round_attaches_when_round_id_differs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    round_root = tmp_path / "round"
+    round_root.mkdir()
+    (round_root / "round.json").write_text(
+        json.dumps(
+            {
+                "rfq": {
+                    "assignment": {
+                        "rfq_id": "RFQ-old",
+                        "required_payment_terms": "Net 30",
+                        "required_validity_days": 14,
+                        "target_price_ceiling_pct": 5.0,
+                        "line_items": [],
+                        "goal_statement": "old",
+                        "approver_email": "approver@sim.local",
+                        "escalation_subject_protocol": "[REF:<supplier_id>]",
+                    },
+                    "directory": [],
+                    "price_history": [],
+                    "clock": {
+                        "sim_time_seconds": 1.0,
+                        "sim_time_days": 0.0,
+                        "round_id": "dev-old",
+                        "mode": "dev",
+                        "clock_factor": 60.0,
+                    },
+                },
+                "suppliers": {},
+                "inbox": [],
+                "dedup": {"email_ids": [], "quote_fingerprints": []},
+            }
+        ),
+        encoding="utf-8",
+    )
+    session = _ResumeClockSession(round_id="exam-1")
+    snapshot_called = False
+
+    def fake_snapshot(simulator: object, store: RoundStore) -> None:
+        nonlocal snapshot_called
+        snapshot_called = True
+
+    monkeypatch.setattr("supplier_loop.cli.snapshot_world", fake_snapshot)
+    monkeypatch.setattr("supplier_loop.cli._finish_round", lambda *args, **kwargs: {})
+
+    out = StringIO()
+    continue_dev_round(
+        session,
+        out,
+        extractor=FixtureExtractor({}),
+        store=RoundStore(round_root),
+        log=MagicMock(),
+        pause_seconds=0.0,
+        max_passes=1,
+    )
+
+    assert "request_dev_round" not in session.calls
+    assert "start_exam" not in session.calls
+    assert "attach" in out.getvalue()
+    assert snapshot_called
+    assert not (round_root / "round.json").exists()
+
+
+@pytest.mark.unit
+def test_continue_dev_round_resumes_without_attach_when_round_id_matches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    round_root = tmp_path / "round"
+    round_root.mkdir()
+    (round_root / "round.json").write_text(
+        json.dumps(
+            {
+                "rfq": {
+                    "assignment": {
+                        "rfq_id": "RFQ-001",
+                        "required_payment_terms": "Net 30",
+                        "required_validity_days": 14,
+                        "target_price_ceiling_pct": 5.0,
+                        "line_items": [],
+                        "goal_statement": "goal",
+                        "approver_email": "approver@sim.local",
+                        "escalation_subject_protocol": "[REF:<supplier_id>]",
+                    },
+                    "directory": [],
+                    "price_history": [],
+                    "clock": {
+                        "sim_time_seconds": 1.0,
+                        "sim_time_days": 0.0,
+                        "round_id": "exam-1",
+                        "mode": "exam",
+                        "clock_factor": 60.0,
+                    },
+                },
+                "suppliers": {},
+                "inbox": [],
+                "dedup": {"email_ids": [], "quote_fingerprints": []},
+            }
+        ),
+        encoding="utf-8",
+    )
+    session = _ResumeClockSession(round_id="exam-1")
+    snapshot_called = False
+
+    def fake_snapshot(simulator: object, store: RoundStore) -> None:
+        nonlocal snapshot_called
+        snapshot_called = True
+
+    monkeypatch.setattr("supplier_loop.cli.snapshot_world", fake_snapshot)
+    monkeypatch.setattr("supplier_loop.cli._finish_round", lambda *args, **kwargs: {})
+
+    out = StringIO()
+    continue_dev_round(
+        session,
+        out,
+        extractor=FixtureExtractor({}),
+        store=RoundStore(round_root),
+        log=MagicMock(),
+        pause_seconds=0.0,
+        max_passes=1,
+    )
+
+    assert "attach" not in out.getvalue()
+    assert not snapshot_called
+    assert (round_root / "round.json").exists()
 
 
 @pytest.mark.unit

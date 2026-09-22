@@ -31,9 +31,10 @@ OpenRouter ledger: **$0.21 of $100**, 23 calls. Default runtime model `google/ge
 
 - **Clock.** Observed ~70–80×. Published `clock_factor` is not a knob and is often `1`. Live confirmation of later fixes is expensive.
 - **Photo extract.** `gpt-4o-mini` misread the Alsayed screenshot (qty, size codes, grand total). `gemini-2.5-pro` read Aluminum Sheet qty 200 at 57.68, Stainless Bolt M8x40, Brass Fitting 1/2in, Epoxy Resin 5L, Plywood qty 100, grand total 16705.20, validity 14 days, terms Net 20. Photo variance is still the highest extract risk.
-- **Class 7 phrasing.** Scan quotes a trapped phrase when it hits a needle (sample-014 exemption, “reviewed-and-accepted”, “no escalation required”). If only the model sets the flag, the approver mail is generic.
+- **Class 7 phrasing.** Scan quotes a trapped phrase when it hits a needle (sample-014 exemption, “reviewed-and-accepted”, “no escalation required”). If only the model sets the flag, the approver mail is generic. A longer needle list does not cover a sealed exam.
 - **Negotiation phrasing.** Round 4 treated “meet you at 4116.00” as a question until that shape was added as a negotiation reply.
 - **Line totals.** Round 4 submitted `200 × 1.16` as `231.99999999999997`. Totals now quantize to cents before submit. Not re-checked on a full live round.
-- **Out of this page.** Submit-echo warning retry, citing as-sent prior quotes on class 6, and fuzzy description match were never claimed.
+- **Description match.** Exact fold and one trailing parenthetical strip only. A fuzzy match could attach the wrong `material_id`.
+- **Submit warnings.** Echo warnings are logged. The loop does not repair the payload and resubmit. Warnings are missing, unknown, or non-numeric fields; sending the same payload again does not clear them.
 
 I would not score this as 98%. Escalation shape and the round-4 submit are the evidence. A sealed exam still has not been run.

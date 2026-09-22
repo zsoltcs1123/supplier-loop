@@ -6,7 +6,7 @@ Cursor agent transcripts for `supplier-loop` and `supplier-loop-prep`.
 - `raw/` — original JSONL (parent sessions)
 - `subagents/` — subagent sessions (Markdown + JSONL)
 
-**25** parent sessions, **6** subagent sessions.
+**26** parent sessions, **6** subagent sessions.
 
 ## Parent sessions
 
@@ -37,6 +37,7 @@ Cursor agent transcripts for `supplier-loop` and `supplier-loop-prep`.
 | Tuesday, Sep 22, 2026, 11:29 AM (UTC+2) | Verify solution vs challenge brief | 9 | [2026-09-22_1231_verify-solution-vs-challenge-brief_ef64c606.md](sessions/2026-09-22_1231_verify-solution-vs-challenge-brief_ef64c606.md) |
 | Tuesday, Sep 22, 2026, 12:19 PM (UTC+2) | Implement SL-C10 (proposals) | 2 | [2026-09-22_1236_implement-sl-c10-proposals_09a732d0.md](sessions/2026-09-22_1236_implement-sl-c10-proposals_09a732d0.md) |
 | Tuesday, Sep 22, 2026, 12:37 PM (UTC+2) | Anneal full export for reviewer | 2 | [2026-09-22_1242_anneal-full-export-for-reviewer_5fa36797.md](sessions/2026-09-22_1242_anneal-full-export-for-reviewer_5fa36797.md) |
+| Tuesday, September 22, 2026 13:45 (file mtime) | Pre-submit review + exam attach fixes | 6 | [2026-09-22_1345_pre-submit-review-exam-attach-fixes_cf1ee6c1.md](sessions/2026-09-22_1345_pre-submit-review-exam-attach-fixes_cf1ee6c1.md) |
 
 ## Subagent sessions
 

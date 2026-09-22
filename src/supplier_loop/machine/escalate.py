@@ -191,7 +191,7 @@ def _class_7_claim(supplier: SupplierFacts) -> str:
 
 
 def _class_6_claim(supplier: SupplierFacts) -> str:
-    original = supplier.quote.recomputed_grand_total if supplier.quote is not None else 0.0
+    original = _as_sent_grand_total(supplier)
     original_text = f"original {original:,.2f}"
     reply = supplier.negotiation_reply_total
     counter = supplier.negotiation_target_total
@@ -204,6 +204,14 @@ def _class_6_claim(supplier: SupplierFacts) -> str:
     else:
         claim = original_text
     return f"negotiation outcome {claim}."
+
+
+def _as_sent_grand_total(supplier: SupplierFacts) -> float:
+    if supplier.quote is None:
+        return 0.0
+    if supplier.own_quote_history:
+        return supplier.own_quote_history[0].grand_total
+    return supplier.quote.as_sent.grand_total
 
 
 def _class_to_restate(classes: list[int]) -> int | None:
